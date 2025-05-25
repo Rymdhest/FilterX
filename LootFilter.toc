@@ -1,0 +1,16 @@
+## Interface: 30300
+## Title: LootFilter
+## Notes: Allows players to create custom rules for filtering items.
+## Author: OpenTTD
+## Version: 1.0.0
+
+## SavedVariables: LootFilterDB
+
+core.lua
+util.lua
+constants.lua
+filters.lua
+rules.lua
+ui_main_window.lua
+ui_filter_window.lua
+ui_rule_window.lua
