@@ -43,29 +43,37 @@ function LF.createNewRule()
     local rule = {
       name = uniqueName,
       isEnabled = true,
-      isUseIDs = false,
       itemIDs = {},
+      words = {},
       regex = "",
-      minCount = 0,
-      itemLevelMin = 10,
-      itemLevelMax = 100,
-      levelRequirementMin = -1,
-      levelRequirementMax = -1,
+      mode = "Items",
+      itemLevelMin = nil,
+      itemLevelMax = nil,
+      levelRequirementMin = nil,
+      levelRequirementMax = nil,
+      goldValueMin = nil,
+      goldValueMax = nil,
+      countMin = nil,
+      countMax = nil,
       rarity = {
-          uncommon = true,
-          common = true,
-          magic = true,
-          rare = true,
-          epic = true,
-          legendary = true,
+        ["Artifact"] = true,
+        ["Legendary"] = true,
+        ["Common"] = true,
+        ["Epic"] = true,
+        ["Heirloom"] = true,
+        ["Uncommon"] = true,
+        ["Rare"] = true,
+        ["Poor"] = true,
       },
-      isRecipe = "any",
-      recipeLearned = "any",
-      consumable = "any",
-      equippable = "yes",
-      weapon = "yes",
-      mount = "no",
-      mountLearned = "any",
+      recipe = "Any",
+      recipeLearned = "Any",
+      consumable = "Any",
+      equippable = "Any",
+      weapon = "Any",
+      mount = "Any",
+      mountLearned = "Any",
+      pet = "Any",
+      petLearned = "Any",
       lootAlert = false,
       action = "Sell",      -- keep, delete, disenchant, sell, nothing
   }
@@ -76,8 +84,11 @@ end
 function LF.describeRule(rule)
     local parts = {}
 
-    -- Name and enabled status
-    table.insert(parts, rule.isEnabled and ("|cff00ff00" .. rule.name .. "|r") or ("|cffff0000" .. rule.name .. "|r"))
+    local moreThanSuffix = " or more"
+    local lessThanSuffix = " or less"
+
+    -- Action and enabled status
+    table.insert(parts, rule.isEnabled and ("|cff00ff00" .. rule.action .. "|r") or ("|cffff0000" .. rule.action .. "|r"))
 
     -- Regex or itemIDs
     if rule.isUseIDs and #rule.itemIDs > 0 then
@@ -86,42 +97,99 @@ function LF.describeRule(rule)
         table.insert(parts, "Name match: \"" .. rule.regex .. "\"")
     end
 
-    -- Count
-    if rule.minCount > 0 then
-        table.insert(parts, "Min Count: " .. rule.minCount)
-    end
+    -- Gold Value range
+    if rule.goldValueMin and rule.goldValueMax then
+        local min = rule.goldValueMin
+        local max = rule.goldValueMax
+        table.insert(parts, "Value: " .. min .. "-" .. max .. " Gold")
+    elseif rule.goldValueMin then
+        local min = rule.goldValueMin
+        table.insert(parts, "Value: " .. min .. moreThanSuffix .. " Gold")
+    elseif rule.goldValueMax then
+        local max = rule.goldValueMax
+        table.insert(parts, "Value: " .. max .. lessThanSuffix .. " Gold")
+     end
 
     -- Item level range
-    if rule.itemLevelMin > -1 or rule.itemLevelMax > -1 then
-        local min = rule.itemLevelMin > -1 and rule.itemLevelMin or "?"
-        local max = rule.itemLevelMax > -1 and rule.itemLevelMax or "?"
+    if rule.itemLevelMin and rule.itemLevelMax then
+        local min = rule.itemLevelMin
+        local max = rule.itemLevelMax
         table.insert(parts, "Item Level: " .. min .. "-" .. max)
-    end
+    elseif rule.itemLevelMin then
+        local min = rule.itemLevelMin
+        table.insert(parts, "Item Level: " .. min .. moreThanSuffix)
+    elseif rule.itemLevelMax then
+        local max = rule.itemLevelMax
+        table.insert(parts, "Item Level: " .. max .. lessThanSuffix)
+     end
 
     -- Level requirement range
-    if rule.levelRequirementMin > -1 or rule.levelRequirementMax > -1 then
-        local min = rule.levelRequirementMin > -1 and rule.levelRequirementMin or "?"
-        local max = rule.levelRequirementMax > -1 and rule.levelRequirementMax or "?"
-        table.insert(parts, "Req Level: " .. min .. "-" .. max)
-    end
+    if rule.levelRequirementMin and rule.levelRequirementMax then
+        local min = rule.levelRequirementMin
+        local max = rule.levelRequirementMax
+        table.insert(parts, "Level Req: " .. min .. "-" .. max)
+    elseif rule.levelRequirementMin then
+        local min = rule.levelRequirementMin
+        table.insert(parts, "Level Req: " .. min .. moreThanSuffix)
+    elseif rule.levelRequirementMax then
+        local max = rule.levelRequirementMax
+        table.insert(parts, "Level Req: " .. max .. lessThanSuffix)
+     end
+
+         -- count range
+    if rule.countMin and rule.countMax then
+        local min = rule.countMin
+        local max = rule.countMax
+        table.insert(parts, "item Count: " .. min .. "-" .. max)
+    elseif rule.countMin then
+        local min = rule.countMin
+        table.insert(parts, "Item Count: " .. min .. moreThanSuffix)
+    elseif rule.countMax then
+        local max = rule.countMax
+        table.insert(parts, "Item Count: " .. max .. lessThanSuffix)
+     end
 
     -- Rarity
-    local rarities = {}
-    for rarity, enabled in pairs(rule.rarity) do
-        if enabled then table.insert(rarities, rarity) end
+    local temp = {}
+    for rarityName, enabled in pairs(rule.rarity) do
+        if enabled then
+            local data = LF.ItemRaritiesByName[rarityName]
+            if data and data.color then
+                table.insert(temp, {
+                    id = data.id,
+                    name = rarityName,
+                    color = data.color
+                })
+            end
+        end
     end
-    if #rarities > 0 and #rarities < 6 then
+
+    -- Sort by rarity ID
+    table.sort(temp, function(a, b) return a.id < b.id end)
+
+    -- Build final formatted list
+    local rarities = {}
+    for _, entry in ipairs(temp) do
+        local r, g, b = unpack(entry.color)
+        r, g, b = r * 255, g * 255, b * 255
+        local colorCode = string.format("|cff%02x%02x%02x", r, g, b)
+        table.insert(rarities, colorCode .. entry.name .. "|r")
+    end
+
+    if #rarities > 0 and #rarities < 8 then
         table.insert(parts, "Rarity: " .. table.concat(rarities, ", "))
     end
 
     -- Type filters
     local function addType(desc, value)
-        if value ~= "any" then
+        if value ~= "Any" then
             table.insert(parts, desc .. ": " .. value)
         end
     end
-    addType("Recipe", rule.isRecipe)
+    addType("Recipe", rule.recipe)
     addType("Recipe Known", rule.recipeLearned)
+    addType("pet", rule.pet)
+    addType("pet known", rule.petLearned)
     addType("Consumable", rule.consumable)
     addType("Equippable", rule.equippable)
     addType("Weapon", rule.weapon)
@@ -133,16 +201,11 @@ function LF.describeRule(rule)
         table.insert(parts, "🔔 Alert")
     end
 
-    -- Action
-    if rule.action and rule.action ~= "nothing" then
-        table.insert(parts, "Action: " .. rule.action)
-    end
-
     return table.concat(parts, " | ")
 end
 
 function LF.GetIconForRuleAction(action)
-    return LF.actions[action] or "Interface\\Icons\\INV_Misc_QuestionMark"
+    return LF.actions[action].icon or "Interface\\Icons\\INV_Misc_QuestionMark"
 end
 
 function LF.RenameRuleInCurrentFilter(rule, newName)

@@ -63,3 +63,25 @@ function LF.GetItemInfo(...)
 ---@diagnostic disable-next-line: deprecated
     return GetItemInfo(...)
 end
+
+function LF.GetItemInfoObject(itemID)
+    local itemName, itemLink, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, icon, sellPrice = LF.GetItemInfo(itemID)
+    if not itemLink or not itemID or not itemName then
+        print("Invalid item data provided.")
+        return nil
+    end
+    return {
+        id = itemID,
+        name = itemName,
+        link = itemLink,
+        quality = quality,
+        level = itemLevel,
+        requiredLevel = requiredLevel,
+        class = itemClass,
+        subClass = itemSubClass,
+        maxStack = maxStack,
+        equipSlot = equipSlot,
+        icon = icon,
+        sellPrice = sellPrice
+    }
+end

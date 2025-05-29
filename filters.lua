@@ -17,6 +17,7 @@ function LF.GetSelectedFilter()
             return filter
         end
     end
+    return nil
 end
 
 local function IsFilterNameUnique(name)
