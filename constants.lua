@@ -72,7 +72,7 @@ LF.referenceItems = {
         ["Bow"]      = 3039    ,
         ["Gun"]      = 16004,
         ["One-handed Mace"]      = 7736,
-        ["Two-handed Mace"]      = 13047    ,
+        ["Two-handed Mace"]      = 13047,
         ["Polearm"]      = 13055,
         ["One-handed Sword"]      = 5191,
         ["Two-handed Sword"]      = 13052,
@@ -107,6 +107,7 @@ LF.referenceItems = {
         ["Idol"]      = 22398,
         ["Totem"]      = 22396,
         ["Sigil"]      = 39208,
+        ["Miscellaneous"] = 7673,
     },
     ["Reagent"] = {
         __class = 17056,
@@ -187,7 +188,10 @@ LF.referenceItems = {
 
 LF.referenceLookup = {}
 for class, subclasses in pairs(LF.referenceItems) do
-  for subclass, itemID in pairs(subclasses) do
-    LF.referenceLookup[itemID] = { class = class, subclass = subclass }
-  end
+    for subclass, itemID in pairs(subclasses) do
+        if subclass ~= "__class" then
+            LF.referenceLookup[itemID] = { class = class, subclass = subclass }
+        end
+    end
 end
+

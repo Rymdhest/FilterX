@@ -11,14 +11,21 @@ eventFrame:RegisterEvent("MERCHANT_UPDATE")
 eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
 
 local function AddToTooltip(tooltip)
+    -- Avoid adding multiple times
+    if tooltip.__LF_CustomLineAdded then return end
+
     local _, link = tooltip:GetItem()
+    if not link then return end
+
     local itemID = tonumber(link:match("item:(%d+)"))
     if not itemID then return end
+
     local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
     if action then
         local actionText = "|cff00ff00["..action.."]|r"
-        local actionicon = " |T" .. LF.actions[action].icon ..":16:16:0:0|t"
-        tooltip:AddLine(actionicon..actionText)
+        local actionicon = " |T" .. LF.actions[action].icon .. ":16:16:0:0|t"
+        tooltip:AddLine(actionicon .. actionText)
+        tooltip.__LF_CustomLineAdded = true
         tooltip:Show()
     end
 end
@@ -34,30 +41,19 @@ function LF:ADDON_LOADED(addonName)
         LootFilterDB = LootFilterDB or {}
         LF.db = LootFilterDB
         LF.db.filters = LF.db.filters or {}
+
+        LF.db.isAutoVendoring = true
+
         eventFrame:UnregisterEvent("ADDON_LOADED")
 
         LF.InitializeItemClassLookup()
         LF.showMainWindow()
         GameTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
         ItemRefTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
-    
+        GameTooltip:HookScript("OnTooltipCleared", function(self)
+            self.__LF_CustomLineAdded = false
+        end)
     end
-end
-
-local function shouldFilterByRarity(filter, itemRarity)
-  local rarityFilter = filter.rarity
-  local allTrue, allFalse = true, true
-
-  for _, value in pairs(rarityFilter) do
-    if value then allFalse = false else allTrue = false end
-    if not allTrue and not allFalse then break end
-  end
-
-  -- Ignore filter if all true or all false
-  if allTrue or allFalse then
-    return true  -- Don't filter out
-  end
-  return rarityFilter[LF.ItemRarities[itemRarity].name] == true
 end
 
 local function checkConditionForRuleAndItem(rule, item)
@@ -89,7 +85,27 @@ local function checkConditionForRuleAndItem(rule, item)
     if rule.countMin and item.count < rule.countMin then return false end
     if rule.countMax and item.count > rule.countMax then return false end
 
-    if not rule.rarity[LF.ItemRarities[item.quality].name] then return false end
+    local numRarities = 0
+    for rarity, data in pairs(rule.rarity) do
+        if not data==false then numRarities = numRarities+1 end
+    end
+
+    if numRarities > 0 then 
+        if not rule.rarity[LF.ItemRarities[item.quality].name] then return false end
+    end
+
+
+    --print(item.class.."  |  "..item.subClass)
+
+    local numClasses = 0
+    for class, subclasses in pairs(rule.classes) do
+        numClasses = numClasses+1
+    end
+
+if numClasses > 0 then
+    if not rule.classes[item.class] then return false end
+    if not rule.classes[item.class][item.subClass] then return false end
+end
 
     return true
 end
@@ -128,22 +144,62 @@ function LF.EvaluateActionForItemIDAgainstRules(itemID)
     return bestAction
 end
 
+function LF.PerformDeleteCheckInventory()
+    local currPrice
+
+    for bag = -2,4 do
+        for slot = 1, GetContainerNumSlots(bag) do
+            local link = GetContainerItemLink(bag,slot)
+            if link then
+                local itemID = tonumber(link:match("item:(%d+)"))
+                local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
+                if action == "Delete" then
+                    PickupContainerItem(bag, slot)
+                    DeleteCursorItem()
+                    print("|cffff0000Deleted:|r "..link)
+                end
+            end
+        end
+    end
+end
+
+function LF.PerformSellInventory()
+  local currPrice
+
+  for bag = 0,4 do
+    for slot = 1, GetContainerNumSlots(bag) do
+      local item = GetContainerItemLink(bag,slot)
+      if item then
+        local itemID = tonumber(item:match("item:(%d+)"))
+        local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
+        if action == "Sell" then
+          currPrice = select(11, LF.GetItemInfo(item)) * select(2, GetContainerItemInfo(bag, slot))
+          if currPrice > 0 then
+            PickupContainerItem(bag, slot)
+            PickupMerchantItem()
+            print("SOLD".." "..item)
+
+          end
+        end
+      end
+    end
+  end
+end
+
 function LF:BAG_UPDATE(bagID)
-    --print("Bag updated: Bag ID =", bagID)
-    -- Example: check inventory or update your UI
+    LF.PerformDeleteCheckInventory()
 end
 
 function LF:MERCHANT_SHOW()
-    print("Merchant window opened")
-    -- Example: auto-sell gray items
+    if LF.db.   isAutoVendoring then
+        LF.PerformSellInventory()
+    end
 end
 
 function LF:MERCHANT_UPDATE()
-    print("Merchant inventory updated")
     -- Example: restock items
 end
 
 function LF:ITEM_LOCK_CHANGED(bagID, slotID)
-    print("Item lock changed in bag", bagID, "slot", slotID)
     -- Useful for tracking item usage (e.g., selling, moving)
 end

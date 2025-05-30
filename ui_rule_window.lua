@@ -172,7 +172,7 @@ local function createActionSelect()
             info.func = function()
                 -- When clicked, save selection and update dropdown text
                 actionDropdown.selectedAction = actionName
-                UIDropDownMenu_SetText(actionDropdown, actionName.." |T" .. LF.actions[actionName].icon ..":16:16:0:0|t")
+                UIDropDownMenu_SetText(actionDropdown, actionName.." |T" .. LF.actions[actionName].icon ..":14:14:0:0|t")
                 
                 -- Here update the rule's action to this selection
                 if LF.GetSelectedRule() then
@@ -338,100 +338,6 @@ local function createRarityCheckboxes()
 
     rarityContainer.rarityCheckboxes = rarityCheckboxes
     return rarityContainer
-end
-
--- Utility: Show/hide suboptions
-local function UpdateSubOptionVisibility(fieldValue, frame)
-    if fieldValue == "Any" then
-        frame.dropDown2:Hide()
-        frame.label2:Hide()
-    else
-        frame.dropDown2:Show()
-        frame.label2:Show()
-    end
-end
-
--- Utility: Create a dropdown initializer
-local function CreateDropdownInitializer(fieldName, onChange, updateVisibility)
-    return function(self, level)
-        local function CreateOption(value, id)
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = value   
-            info.func = function()
-                UIDropDownMenu_SetSelectedID(self, id)
-
-                local rule = LF.GetSelectedRule()
-
-                LF.GetSelectedRule()[fieldName] = value
-                LF.RefreshFilterWindowRuleList()
-                if updateVisibility then
-                    updateVisibility(LF.GetSelectedRule()[fieldName], self:GetParent())
-                end
-                if onChange then
-                    onChange(value)
-                end
-            end
-            UIDropDownMenu_AddButton(info, level)
-        end
-
-        CreateOption("Any", 1)
-        CreateOption("Yes", 2)
-        CreateOption("No", 3)
-
-        local selected = LF.GetSelectedRule()[fieldName]
-        if selected == "Yes" then
-            UIDropDownMenu_SetSelectedID(self, 2)
-        elseif selected == "No" then
-            UIDropDownMenu_SetSelectedID(self, 3)
-        else
-            UIDropDownMenu_SetSelectedID(self, 1)
-        end
-
-        if updateVisibility then
-            updateVisibility(selected, self:GetParent())
-        end
-    end
-end
-
--- Generic UI section creator
-local function CreateSelectionFrame(config)
-    local frame = CreateFrame("Frame", config.name .. "SelectionFrame", RuleWindow)
-
-    -- Label 1
-    frame.label1 = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    frame.label1:SetPoint("TOPRIGHT", RuleWindow, "TOPRIGHT", unpack(config.offset or {-170, -300}))
-    frame.label1:SetText(config.label1)
-    frame.label1:SetTextColor(unpack(LF.Colors.Text))
-    frame.field1 = config.field1
-    frame.field2 = config.field2
-
-    -- Dropdown 1
-    frame.dropDown1 = CreateFrame("Frame", config.name .. "Dropdown1", frame, "UIDropDownMenuTemplate")
-    frame.dropDown1:SetPoint("LEFT", frame.label1, "RIGHT", -10, 0)
-    UIDropDownMenu_SetWidth(frame.dropDown1, 50)
-
-    if config.hasSubOptions then
-        -- Label 2
-        frame.label2 = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        frame.label2:SetPoint("LEFT", frame.dropDown1, "RIGHT", -10, 0)
-        frame.label2:SetText(config.label2)
-        frame.label2:SetTextColor(unpack(LF.Colors.Text))
-
-        -- Dropdown 2
-        frame.dropDown2 = CreateFrame("Frame", config.name .. "Dropdown2", frame, "UIDropDownMenuTemplate")
-        frame.dropDown2:SetPoint("LEFT", frame.label2, "RIGHT", -10, 0)
-        UIDropDownMenu_SetWidth(frame.dropDown2, 50)
-
-        -- Initialize dropdown2 initializer *before* calling Initialize
-        frame.initialize2 = CreateDropdownInitializer(frame.field2)
-        UIDropDownMenu_Initialize(frame.dropDown2, frame.initialize2)
-    end
-
-    -- Initialize dropdown1 initializer *before* calling Initialize
-    frame.initialize1 = CreateDropdownInitializer(frame.field1, nil, UpdateSubOptionVisibility)
-    UIDropDownMenu_Initialize(frame.dropDown1, frame.initialize1)
-
-    return frame
 end
 
 function LF.createRuleWindow()
@@ -722,7 +628,7 @@ function LF.createClassSelect()
             if subClassName ~= "__class" then
                 local subRow = CreateFrame("Frame", nil, content)
                 local subCheck = CreateFrame("CheckButton", nil, subRow, "UICheckButtonTemplate")
-                subCheck:SetPoint("LEFT", subRow, "LEFT", 50, 0)
+                subCheck:SetPoint("LEFT", subRow, "LEFT", 30, 0)
 
                 local subLabel = subRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
                 subLabel:SetPoint("LEFT", subCheck, "RIGHT", 4, 0)
@@ -760,6 +666,7 @@ function LF.createClassSelect()
                     end
 
                     parentMeta.check:SetChecked(anyChecked)
+                    if not anyChecked then selectedRuleClasses[parentMeta.name] = nil end
 
                     LF.refreshClassSelect()
                 end)
@@ -783,6 +690,7 @@ function LF.createClassSelect()
             for _, childMeta in ipairs(rowMeta.children) do
                 childMeta.check:SetChecked(isChecked)
             end
+            if not isChecked then LF.GetSelectedRule().classes[className] = nil end
 
             LF.refreshClassSelect()
         end)
