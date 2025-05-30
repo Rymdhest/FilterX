@@ -1,5 +1,8 @@
 LF = LF or {}
 
+function LF.NormalizeColor(color)
+    return {color[1] / 255, color[2] / 255, color[3] / 255, color[4] / 255}
+end
 LF.Colors = {
     Background = LF.NormalizeColor({13, 27, 42, 255}),
     Border     = LF.NormalizeColor({27, 38, 59, 255}),
@@ -35,4 +38,156 @@ LF.ItemRarities = {
 LF.ItemRaritiesByName = {}
 for id, data in pairs(LF.ItemRarities) do
     LF.ItemRaritiesByName[data.name] = { id = id, color = data.color }
+end
+
+LF.referenceItems = {
+    ["Consumable"] = {
+        __class = 22854,
+        ["Consumable"]= 835,
+        ["Potion"]       = 118,
+        ["Elixir"]      = 9187,
+        ["Flask"]     = 13512,
+        ["Scroll"]     = 43466,
+        ["Food & Drink"]     = 4457,
+        ["Item Enhancement"]     = 24276,
+        ["Bandage"]     = 14530,
+        ["Other"]     = 49633,
+    },
+    ["Container"] = {
+        __class = 4500  ,
+        ["Bag"]     = 14046,
+        ["Soul Bag"]   = 21340,
+        ["Herb Bag"]      = 22248,
+        ["Enchanting Bag"]     = 22246,
+        ["Engineering Bag"]     = 30745,
+        ["Gem Bag"]     = 30747,
+        ["Mining Bag"]     = 30746,
+        ["Leatherworking Bag"]     = 34482,
+        ["Inscription Bag"]     = 39489,
+    },
+    ["Weapon"] = {
+        __class = 15250,
+        ["One-handed Axe"]     = 1459,
+        ["Two-handed Axe"]       = 12784,
+        ["Bow"]      = 3039    ,
+        ["Gun"]      = 16004,
+        ["One-handed Mace"]      = 7736,
+        ["Two-handed Mace"]      = 13047    ,
+        ["Polearm"]      = 13055,
+        ["One-handed Sword"]      = 5191,
+        ["Two-handed Sword"]      = 13052,
+        ["Staff"]      = 873,
+        ["Fist Weapon"]      = 11744,
+        ["Dagger"]      = 2632,
+        ["Thrown"]      = 39138,
+        ["Crossbow"]      = 13038,
+        ["Wand"]      = 5244,
+        ["Fishing Pole"]      = 6367,
+        ["Miscellaneous"]      = 2901,
+    },
+    ["Gem"] = {
+        __class = 32231,
+        ["Red"]     = 23436,
+        ["Blue"]       = 23438,
+        ["Yellow"]      = 23440,
+        ["Purple"]      = 23441,
+        ["Green"]      = 23437,
+        ["Orange"]      = 23439,
+        ["Meta"]      = 41398,
+        ["Prismatic"]      = 49110,
+    },
+    ["Armor"] = {
+        __class = 2986,
+        ["Cloth"]     = 16605,
+        ["Leather"]       = 27552,
+        ["Mail"]      = 15487,
+        ["Plate"]      = 7939,
+        ["Shield"]      = 15014,
+        ["Libram"]      = 23203,
+        ["Idol"]      = 22398,
+        ["Totem"]      = 22396,
+        ["Sigil"]      = 39208,
+    },
+    ["Reagent"] = {
+        __class = 17056,
+        ["Reagent"]     = 17056,
+    },
+    ["Projectile"] = {
+        __class = 28060,
+        ["Arrow"]     = 3464,
+        ["Bullet"]       = 11630,
+    },
+    ["Trade Goods"] = {
+        __class = 4291,
+        ["Parts"]       = 4382,
+        ["Devices"]      = 22728,
+        ["Jewelcrafting"]      = 21752,
+        ["Cloth"]      = 4306,
+        ["Leather"]      = 8170,
+        ["Metal & Stone"]      = 3575,
+        ["Herb"]      = 2447,
+        ["Meat"]      = 769,
+        ["Explosives"]      = 10586,
+        ["Elemental"]      = 7078,
+        ["Enchanting"]      = 16204,
+        ["Materials"]      = 23572,
+        ["Armor Enchantment"]      = 38682,
+        ["Weapon Enchantment"]      = 39349,
+        ["Other"]      = 17010,
+    },
+    ["Recipe"] = {   
+        __class = 42176, 
+        ["Book"]     = 44956,
+        ["Leatherworking"]       = 44552,
+        ["Tailoring"]      = 42176,
+        ["Engineering"]      = 44918,
+        ["Blacksmithing"]      = 44937,
+        ["Cooking"]      = 5484    ,
+        ["Alchemy"]      = 22910,
+        ["First Aid"]      = 39152,
+        ["Enchanting"]      = 44484,
+        ["Fishing"]      = 16083,
+        ["Jewelcrafting"]      = 41718,
+    },
+    ["Quiver"] = {
+        __class = 29143,
+        ["Quiver"]     = 11362,
+        ["Ammo Pouch"]       = 11363,
+    },
+    ["Quest"] = {
+        __class = 49643,
+        ["Quest"]     = 49643,
+    },
+    ["Key"] = {
+        __class = 7146,
+        ["Key"]     = 7146,
+    },
+    ["Miscellaneous"] = {
+        __class = 18796,
+        ["Junk"]     = 16882,
+        ["Pet"]      = 8491,
+        ["Holiday"]      = 17202,
+        ["Mount"]      = 18776,
+        ["Other"]      = 32897,
+    },
+    ["Glyph"] = {
+        __class = 43415,
+        ["Warrior"]     = 43415,
+        ["Paladin"]       = 41105,
+        ["Hunter"]      = 42897,
+        ["Rogue"]      = 42964,
+        ["Priest"]      = 42400,
+        ["Death Knight"]      = 43533,
+        ["Shaman"]      = 41532,
+        ["Mage"]      = 42734,
+        ["Warlock"]      = 42465,
+        ["Druid"]      = 40922,
+    },
+}
+
+LF.referenceLookup = {}
+for class, subclasses in pairs(LF.referenceItems) do
+  for subclass, itemID in pairs(subclasses) do
+    LF.referenceLookup[itemID] = { class = class, subclass = subclass }
+  end
 end

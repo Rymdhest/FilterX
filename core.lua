@@ -13,6 +13,7 @@ eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
 local function AddToTooltip(tooltip)
     local _, link = tooltip:GetItem()
     local itemID = tonumber(link:match("item:(%d+)"))
+    if not itemID then return end
     local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
     if action then
         local actionText = "|cff00ff00["..action.."]|r"
@@ -35,10 +36,11 @@ function LF:ADDON_LOADED(addonName)
         LF.db.filters = LF.db.filters or {}
         eventFrame:UnregisterEvent("ADDON_LOADED")
 
+        LF.InitializeItemClassLookup()
         LF.showMainWindow()
         GameTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
         ItemRefTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
-
+    
     end
 end
 
@@ -60,6 +62,10 @@ end
 
 local function checkConditionForRuleAndItem(rule, item)
 
+    if not item then
+        print("Item is nil, cannot check rule.")
+        return false
+    end
     --print(item.class, item.subclass, item.name, item.id, item.level, item.requiredLevel, item.sellPrice, item.count)
 
     if rule.regex and rule.regex ~= "" and string.match(item.name, rule.regex) then
@@ -83,17 +89,7 @@ local function checkConditionForRuleAndItem(rule, item)
     if rule.countMin and item.count < rule.countMin then return false end
     if rule.countMax and item.count > rule.countMax then return false end
 
-
-
-    print("item.class:", item.class, "item.subclass:", item.subClass)
-    if rule.equippable ~= "Any" then 
-        if rule.equippable == "Yes" then 
-            if item.class == "Armour" or item.class == "Weapon" then return false end
-        elseif rule.equippable == "No" then
-            if item.class == "Armour" or item.class == "Weapon" then return true end
-        end
-    end
-
+    if not rule.rarity[LF.ItemRarities[item.quality].name] then return false end
 
     return true
 end
@@ -118,6 +114,7 @@ function LF.EvaluateActionForItemIDAgainstRules(itemID)
     end
 
     local item = LF.GetItemInfoObject(itemID)
+    if not item then return end
     for _, rule in ipairs(LF.GetSelectedFilter().rules) do
         if rule.isEnabled and RuleMatchesItem(rule, item) then
             local rulePriority = LF.actions[rule.action].priority
@@ -132,7 +129,7 @@ function LF.EvaluateActionForItemIDAgainstRules(itemID)
 end
 
 function LF:BAG_UPDATE(bagID)
-    print("Bag updated: Bag ID =", bagID)
+    --print("Bag updated: Bag ID =", bagID)
     -- Example: check inventory or update your UI
 end
 

@@ -65,15 +65,8 @@ function LF.createNewRule()
         ["Rare"] = true,
         ["Poor"] = true,
       },
-      recipe = "Any",
-      recipeLearned = "Any",
-      consumable = "Any",
-      equippable = "Any",
-      weapon = "Any",
-      mount = "Any",
-      mountLearned = "Any",
-      pet = "Any",
-      petLearned = "Any",
+      classes = {},
+      learned = "Any",
       lootAlert = false,
       action = "Sell",      -- keep, delete, disenchant, sell, nothing
   }
@@ -176,7 +169,7 @@ function LF.describeRule(rule)
         table.insert(rarities, colorCode .. entry.name .. "|r")
     end
 
-    if #rarities > 0 and #rarities < 8 then
+    if #rarities > 0 and #rarities <= #LF.ItemRarities then
         table.insert(parts, "Rarity: " .. table.concat(rarities, ", "))
     end
 
@@ -186,15 +179,7 @@ function LF.describeRule(rule)
             table.insert(parts, desc .. ": " .. value)
         end
     end
-    addType("Recipe", rule.recipe)
-    addType("Recipe Known", rule.recipeLearned)
-    addType("pet", rule.pet)
-    addType("pet known", rule.petLearned)
-    addType("Consumable", rule.consumable)
-    addType("Equippable", rule.equippable)
-    addType("Weapon", rule.weapon)
-    addType("Mount", rule.mount)
-    addType("Mount Known", rule.mountLearned)
+    --addType("Recipe", rule.recipe)
 
     -- Loot alert
     if rule.lootAlert then

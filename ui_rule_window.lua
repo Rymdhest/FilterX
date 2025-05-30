@@ -4,10 +4,7 @@ LF = LF or {}
 -- Limit how many times we retry (e.g., 5 times)
 local MAX_RETRIES = 5
 local RETRY_DELAY = 0.5
--- Hidden tooltip for triggering server queries
-local queryTooltip = CreateFrame("GameTooltip", "LFHiddenTooltip", UIParent, "GameTooltipTemplate")
-queryTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-queryTooltip:Hide()
+
 
 -- Function to validate inputs and update rule
 local function ValidateAndUpdateMinMaxRule(minInput, maxInput, rule, minFieldName, maxFieldName)
@@ -52,9 +49,7 @@ local function TryAddItemByInput(inputText, retryCount)
             LF.AddItemIDToRule(rule, itemID)
             LF.RefreshRuleWindowItemList()
         elseif retryCount < MAX_RETRIES then
-            queryTooltip:SetHyperlink("item:" .. itemID)
-            queryTooltip:Show()
-            queryTooltip:Hide()
+            LF.QueryItemInfo(itemID)
             C_Timer.After(RETRY_DELAY, function()
                 TryAddItemByInput(inputText, retryCount + 1)
             end)
@@ -127,10 +122,7 @@ local function handleModeChange(mode)
     setShowOrHideFram(RuleWindow.levelReq, isItemListMode)
     setShowOrHideFram(RuleWindow.itemCount, isItemListMode)
     setShowOrHideFram(RuleWindow.rarityBoxes, isItemListMode)
-    setShowOrHideFram(RuleWindow.equippable, isItemListMode)
-    setShowOrHideFram(RuleWindow.recipe, isItemListMode)
-    setShowOrHideFram(RuleWindow.mount, isItemListMode)
-    setShowOrHideFram(RuleWindow.pet, isItemListMode)
+    setShowOrHideFram(RuleWindow.classSelect, isItemListMode)
 
 end
 
@@ -315,31 +307,35 @@ end
 
 local function createRarityCheckboxes()
     local rarityContainer = CreateFrame("Frame", nil, RuleWindow)
-    rarityContainer:SetSize(100, 150)
-    rarityContainer:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 10, -100)
+    rarityContainer:SetSize(200, #LF.ItemRarities*20)
+    rarityContainer:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -30, 40)
 
     local rarityCheckboxes = {}
     for id, data in pairs(LF.ItemRarities) do
-        local checkbox = CreateFrame("CheckButton", nil, rarityContainer, "UICheckButtonTemplate")
-        checkbox:SetPoint("TOPLEFT", 0, -20 * id)
+        -- Create a row frame for label + checkbox
+        local row = CreateFrame("Frame", nil, rarityContainer)
+        row:SetSize(180, 20)
+        row:SetPoint("TOPLEFT", rarityContainer, "TOPLEFT", 0, -20 * (id - 1))
 
-        local label = checkbox:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        label:SetPoint("LEFT", checkbox, "RIGHT", 4, 0)
+        -- Create label first, aligned left
+        local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        label:SetPoint("RIGHT", row, "RIGHT", 0, 0)
         label:SetText(data.name)
         label:SetTextColor(unpack(data.color))
 
+        -- Create checkbox to the right of the label
+        local checkbox = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+        checkbox:SetPoint("LEFT", label, "RIGHT", 8, 0)
+
         checkbox:SetScript("OnClick", function(self)
             local selectedRule = LF.GetSelectedRule()
-            if self:GetChecked() then 
-                selectedRule.rarity[LF.ItemRarities[id].name] = true
-            else
-                selectedRule.rarity[LF.ItemRarities[id].name] = false
-            end
+            selectedRule.rarity[data.name] = self:GetChecked() or false
             LF.RefreshFilterWindowRuleList()
         end)
 
         rarityCheckboxes[id] = checkbox
     end
+
     rarityContainer.rarityCheckboxes = rarityCheckboxes
     return rarityContainer
 end
@@ -455,42 +451,8 @@ function LF.createRuleWindow()
     RuleWindow.itemCount = createMinMaxInput("Item Count:", -160, "countMin", "countMax", "ItemCount")
     RuleWindow.rarityBoxes = createRarityCheckboxes()
 
-    RuleWindow.equippable = CreateSelectionFrame({
-        name = "Equippable",
-        label1 = "Gear?",
-        label2 = "Weapon?",
-        field1 = "equippable",
-        field2 = "weapon",
-        hasSubOptions = true,
-        offset = {-210, -280}
-    })
-    RuleWindow.recipe = CreateSelectionFrame({
-        name = "Recipe",
-        label1 = "Recipe?",
-        label2 = "Learned?",
-        field1 = "recipe",
-        field2 = "recipeLearned",
-        hasSubOptions = true,
-        offset = {-210, -310}
-    })
-        RuleWindow.mount = CreateSelectionFrame({
-        name = "Mount",
-        label1 = "Mount?",
-        label2 = "Learned?",
-        field1 = "mount",
-        field2 = "mountLearned",
-        hasSubOptions = true,
-        offset = {-210, -340}
-    })
-        RuleWindow.pet = CreateSelectionFrame({
-        name = "Pet",
-        label1 = "Pet?",
-        label2 = "Learned?",
-        field1 = "pet",
-        field2 = "petLearned",
-        hasSubOptions = true,
-        offset = {-210, -370}
-    })
+    RuleWindow.classSelect = LF.createClassSelect()
+
     RuleWindow:SetFrameStrata("HIGH")
 end
 
@@ -505,6 +467,14 @@ function LF.showRuleWindow()
     RuleWindow:SetPoint("CENTER", LF.FilterWindow, "CENTER", 20, -20)
     RuleWindow.nameInput:SetText(rule.name)
     LF.RefreshRuleWindowItemList()
+
+    for _, rowData in ipairs(RuleWindow.classSelect.rows) do
+        if rowData.type == "class" then
+            rowData.expanded = false
+             rowData.expandButton:SetText("+")
+        end
+    end
+    LF.refreshClassSelect()
 
     RuleWindow.actionSelect.selectedAction = rule.action
     UIDropDownMenu_SetText(RuleWindow.actionSelect, rule.action.." |T" .. LF.actions[rule.action].icon ..":16:16:0:0|t")
@@ -523,11 +493,11 @@ function LF.showRuleWindow()
     RuleWindow.itemCount.min:SetText(rule.countMin or "")
     RuleWindow.itemCount.max:SetText(rule.countMax or "")
 
-    UIDropDownMenu_Initialize(RuleWindow.equippable.dropDown1, RuleWindow.equippable.initialize1)
-    UIDropDownMenu_Initialize(RuleWindow.equippable.dropDown2, RuleWindow.equippable.initialize2)
+    --UIDropDownMenu_Initialize(RuleWindow.equippable.dropDown1, RuleWindow.equippable.initialize1)
+    --UIDropDownMenu_Initialize(RuleWindow.equippable.dropDown2, RuleWindow.equippable.initialize2)
 
-    UIDropDownMenu_Initialize(RuleWindow.recipe.dropDown1, RuleWindow.recipe.initialize1)
-    UIDropDownMenu_Initialize(RuleWindow.recipe.dropDown2, RuleWindow.recipe.initialize2)
+    --UIDropDownMenu_Initialize(RuleWindow.recipe.dropDown1, RuleWindow.recipe.initialize1)
+    --UIDropDownMenu_Initialize(RuleWindow.recipe.dropDown2, RuleWindow.recipe.initialize2)
 
     for id, checkbox in pairs(RuleWindow.rarityBoxes.rarityCheckboxes) do
         checkbox:SetChecked(rule.rarity and rule.rarity[LF.ItemRarities[id].name] or false)
@@ -559,22 +529,6 @@ LF.refreshScheduled = false
 
 function LF.DelayCall(delay, func)
     table.insert(DelayedCalls, { delay = delay, func = func })
-end
-
-local queryTooltip = CreateFrame("GameTooltip", "MyHiddenTooltip", UIParent, "GameTooltipTemplate")
-queryTooltip:SetOwner(UIParent, "ANCHOR_NONE")
-queryTooltip:Hide()
-
-function LF.QueryItemInfo(itemID)
-    local itemName = LF.GetItemInfo(itemID)
-    if itemName then
-        return true -- Already cached
-    else
-        queryTooltip:SetHyperlink("item:"..itemID)
-        queryTooltip:Show()
-        queryTooltip:Hide()
-        return false
-    end
 end
 
 local function OnItemButtonClick(self)
@@ -706,3 +660,192 @@ StaticPopupDialogs["LOOTFILTER_CONFIRM_REMOVE_ITEM"] = {
     hideOnEscape = true,
     preferredIndex = 3,
 }
+
+function LF.createClassSelect()
+    local classSelectFrame = CreateFrame("Frame", "ClassSelectFrame", RuleWindow)
+    classSelectFrame:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 10, -80)
+    classSelectFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -250, 10)
+
+    local scrollFrame = CreateFrame("ScrollFrame", "ScrollFramecc", classSelectFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetAllPoints()
+
+    local content = CreateFrame("Frame", nil, scrollFrame)
+    content:SetSize(200, 1)
+    scrollFrame:SetScrollChild(content)
+
+    classSelectFrame.content = content
+    classSelectFrame.rows = {} -- unified rows table
+
+    for className, data in pairs(LF.referenceItems) do
+        local row = CreateFrame("Frame", nil, content)
+        row:SetSize(200, 20)
+
+        -- Expand/Collapse Button
+        local expandButton = CreateFrame("Button", nil, row)
+        expandButton:SetSize(20, 20)
+        expandButton:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+        expandButton:SetNormalFontObject("GameFontNormal")
+        expandButton:SetText("—")
+
+        local rowMeta = {
+            frame = row,
+            type = "class",
+            name = className,
+            expanded = true,
+            children = {},
+            expandButton = expandButton,
+        }
+        row.meta = rowMeta
+
+        -- Toggle expanded state when button clicked
+        expandButton:SetScript("OnClick", function()
+            rowMeta.expanded = not rowMeta.expanded
+            expandButton:SetText(rowMeta.expanded and "—" or "+")
+            LF.refreshClassSelect()
+        end)
+
+        -- Checkbox for the class row
+        local check = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
+        check:SetPoint("LEFT", expandButton, "RIGHT", 2, 0)
+        rowMeta.check = check -- store reference
+
+        -- Label for class name
+        local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        label:SetPoint("LEFT", check, "RIGHT", 2, 0)
+        label:SetText(" |T" .. LF.GetItemInfoObject(LF.referenceItems[className].__class).icon ..":15:15:0:0|t "..className)
+        label:SetTextColor(1, 1, 1, 1)
+
+        table.insert(classSelectFrame.rows, rowMeta)
+
+        -- Create sub-class rows
+        for subClassName, iconID in pairs(data) do
+            if subClassName ~= "__class" then
+                local subRow = CreateFrame("Frame", nil, content)
+                local subCheck = CreateFrame("CheckButton", nil, subRow, "UICheckButtonTemplate")
+                subCheck:SetPoint("LEFT", subRow, "LEFT", 50, 0)
+
+                local subLabel = subRow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                subLabel:SetPoint("LEFT", subCheck, "RIGHT", 4, 0)
+                subLabel:SetText(" |T" .. LF.GetItemInfoObject(LF.referenceItems[className][subClassName]).icon ..":15:15:0:0|t "..subClassName)
+                subLabel:SetTextColor(1, 1, 1, 1)
+
+                local subMeta = {
+                    frame = subRow,
+                    type = "subclass",
+                    parent = row.meta,
+                    check = subCheck,
+                    name = subClassName
+                }
+                subRow.meta = subMeta
+
+                table.insert(row.meta.children, subMeta)
+                table.insert(classSelectFrame.rows, subMeta)
+
+                subCheck:SetScript("OnClick", function()
+                    local isChecked = subCheck:GetChecked()
+                    local parentMeta = subMeta.parent
+
+                    -- Update saved data for this subclass only
+                    local selectedRuleClasses = LF.GetSelectedRule().classes
+                    selectedRuleClasses[parentMeta.name] = selectedRuleClasses[parentMeta.name] or {}
+                    selectedRuleClasses[parentMeta.name][subMeta.name] = isChecked or nil
+
+                    -- Update parent checkbox based on any checked subclasses
+                    local anyChecked = false
+                    for _, childMeta in ipairs(parentMeta.children) do
+                        if childMeta.check:GetChecked() then
+                            anyChecked = true
+                            break
+                        end
+                    end
+
+                    parentMeta.check:SetChecked(anyChecked)
+
+                    LF.refreshClassSelect()
+                end)
+            end
+        end
+
+        check:SetScript("OnClick", function()
+            local isChecked = check:GetChecked()
+
+            -- Expand class if checked, collapse if unchecked
+            rowMeta.expanded = isChecked
+            rowMeta.expandButton:SetText(isChecked and "—" or "+")
+
+            LF.GetSelectedRule().classes[className] = LF.GetSelectedRule().classes[className] or {}
+            for subClassName, _ in pairs(LF.referenceItems[className]) do
+                if subClassName ~= "__class" then
+                    LF.GetSelectedRule().classes[className][subClassName] = isChecked or nil
+                end
+            end
+            -- Set all subclass checkboxes to match
+            for _, childMeta in ipairs(rowMeta.children) do
+                childMeta.check:SetChecked(isChecked)
+            end
+
+            LF.refreshClassSelect()
+        end)
+    end
+
+    RuleWindow.classSelect = classSelectFrame
+    LF.refreshClassSelect()
+    return classSelectFrame
+end
+function LF.refreshClassSelect()
+    local selectedRule = LF.GetSelectedRule()
+
+    local ySize = 20
+    local yOffset = 0
+    local content = RuleWindow.classSelect.content
+
+    for _, rowData in ipairs(RuleWindow.classSelect.rows) do
+        local frame = rowData.frame
+        frame:ClearAllPoints()
+
+        if rowData.type == "class" then
+            frame:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -yOffset)
+            frame:SetSize(200, ySize)
+            frame:Show()
+            yOffset = yOffset + ySize
+
+            local className = rowData.name
+            local hasAnySubclass = false
+            if selectedRule.classes[className] then
+                for subClassName, value in pairs(selectedRule.classes[className]) do
+                    if subClassName ~= "__class" and value then
+                        hasAnySubclass = true
+                        break
+                    end
+                end
+            end
+
+            if rowData.check then
+                rowData.check:SetChecked(hasAnySubclass)
+            end
+
+        elseif rowData.type == "subclass" then
+            if rowData.parent.expanded then
+                frame:SetPoint("TOPLEFT", content, "TOPLEFT", 20, -yOffset)
+                frame:SetSize(200, ySize)
+                frame:Show()
+                yOffset = yOffset + ySize
+
+                local className = rowData.parent.name
+                local subClassName = rowData.name
+                local isChecked = selectedRule.classes[className] and selectedRule.classes[className][subClassName]
+
+
+                if rowData.check then
+                    rowData.check:SetChecked(isChecked and true or false)
+                end
+            else
+                frame:Hide()
+            end
+        else
+            frame:Hide()
+        end
+    end
+
+    content:SetHeight(yOffset)
+end

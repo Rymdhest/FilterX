@@ -7,8 +7,9 @@
 ## SavedVariables: LootFilterDB
 
 core.lua
-util.lua
 constants.lua
+util.lua
+itemClassLookup.lua
 filters.lua
 rules.lua
 ui_main_window.lua

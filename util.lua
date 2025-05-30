@@ -20,9 +20,7 @@ function LF.delay(seconds, func)
     end)
 end
 
-function LF.NormalizeColor(color)
-    return {color[1] / 255, color[2] / 255, color[3] / 255, color[4] / 255}
-end
+
 
 function LF.createBaseWindow(name, title)
     local frame = CreateFrame("Frame", name, UIParent)
@@ -65,11 +63,26 @@ function LF.GetItemInfo(...)
 end
 
 function LF.GetItemInfoObject(itemID)
-    local itemName, itemLink, quality, itemLevel, requiredLevel, itemClass, itemSubClass, maxStack, equipSlot, icon, sellPrice = LF.GetItemInfo(itemID)
+    local itemName, itemLink, quality, itemLevel, requiredLevel, itemClassLocalized, itemSubClassLocalized,
+          maxStack, equipSlot, icon, sellPrice = LF.GetItemInfo(itemID)
+    
     if not itemLink or not itemID or not itemName then
-        print("Invalid item data provided.")
         return nil
     end
+
+    -- Translate localized class/subclass to internal identifiers
+    local internalClass, internalSubClass = nil, nil
+    if LF.localizedToInternal[itemClassLocalized] then
+        local mapped = LF.localizedToInternal[itemClassLocalized][itemSubClassLocalized]
+        if mapped then
+            internalClass = mapped.class
+            internalSubClass = mapped.subclass
+        end
+    end
+
+    -- Fallback: if no mapping found, just keep the localized strings (optional)
+    internalClass = internalClass or itemClassLocalized
+    internalSubClass = internalSubClass or itemSubClassLocalized
     return {
         id = itemID,
         name = itemName,
@@ -77,11 +90,26 @@ function LF.GetItemInfoObject(itemID)
         quality = quality,
         level = itemLevel,
         requiredLevel = requiredLevel,
-        class = itemClass,
-        subClass = itemSubClass,
+        class = internalClass,       -- internal name here
+        subClass = internalSubClass, -- internal name here
         maxStack = maxStack,
         equipSlot = equipSlot,
         icon = icon,
         sellPrice = sellPrice
     }
+end
+
+local queryTooltip = CreateFrame("GameTooltip", "MyHiddenTooltip", UIParent, "GameTooltipTemplate")
+queryTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+queryTooltip:Hide()
+function LF.QueryItemInfo(itemID)
+    local itemName = LF.GetItemInfo(itemID)
+    if itemName then
+        return true -- Already cached
+    else
+        queryTooltip:SetHyperlink("item:"..itemID)
+        queryTooltip:Show()
+        queryTooltip:Hide()
+        return false
+    end
 end
