@@ -47,7 +47,6 @@ local function TryAddItemByInput(inputText, retryCount)
         local name = LF.GetItemInfo(itemID)
         if name then
             LF.AddItemIDToRule(rule, itemID)
-            LF.RefreshRuleWindowItemList()
         elseif retryCount < MAX_RETRIES then
             LF.QueryItemInfo(itemID)
             C_Timer.After(RETRY_DELAY, function()
@@ -71,7 +70,6 @@ local function TryAddItemByInput(inputText, retryCount)
 
     if foundID then
         LF.AddItemIDToRule(rule, foundID)
-        LF.RefreshRuleWindowItemList()
     else
         print("|cffff0000[LF]|r Item not found or not cached. Try shift-clicking it or typing an item ID.")
     end
@@ -367,6 +365,7 @@ function LF.showRuleWindow()
     if not RuleWindow then
         LF.createRuleWindow()
     end
+    RuleWindow:Show()
 
     local rule = LF.GetSelectedRule()
     RuleWindow:ClearAllPoints()
@@ -410,7 +409,6 @@ function LF.showRuleWindow()
     end
 
     handleModeChange(rule.mode)
-    RuleWindow:Show()
 end
 
 
@@ -444,7 +442,6 @@ local function OnItemButtonClick(self)
 
     if IsShiftKeyDown() or IsControlKeyDown() then
         LF.RemoveItemIDFromRule(rule, itemID)
-        LF.RefreshRuleWindowItemList()
     else
         StaticPopup_Show("LOOTFILTER_CONFIRM_REMOVE_ITEM", itemName, nil, itemID)
     end
@@ -475,7 +472,7 @@ end
 function LF.RefreshRuleWindowItemList()
 
     if not RuleWindow or not LF.GetSelectedRule() then return end
-
+    if not RuleWindow:IsShown() then return end
     local rule = LF.GetSelectedRule()
     -- Clear previous entries
     for _, child in ipairs({ RuleWindow.itemList.itemListContent:GetChildren() }) do
@@ -559,7 +556,6 @@ StaticPopupDialogs["LOOTFILTER_CONFIRM_REMOVE_ITEM"] = {
         local itemID = self.data
         local rule = LF.GetSelectedRule()
         LF.RemoveItemIDFromRule(rule, itemID)
-        LF.RefreshRuleWindowItemList()
     end,
     timeout = 0,
     whileDead = true,
@@ -666,7 +662,9 @@ function LF.createClassSelect()
                     end
 
                     parentMeta.check:SetChecked(anyChecked)
-                    if not anyChecked then selectedRuleClasses[parentMeta.name] = nil end
+                    if not anyChecked then
+                        selectedRuleClasses[parentMeta.name] = nil
+                        end
 
                     LF.refreshClassSelect()
                 end)
@@ -676,9 +674,8 @@ function LF.createClassSelect()
         check:SetScript("OnClick", function()
             local isChecked = check:GetChecked()
 
-            -- Expand class if checked, collapse if unchecked
-            rowMeta.expanded = isChecked
-            rowMeta.expandButton:SetText(isChecked and "—" or "+")
+            --rowMeta.expanded = isChecked
+            --rowMeta.expandButton:SetText(isChecked and "—" or "+")
 
             LF.GetSelectedRule().classes[className] = LF.GetSelectedRule().classes[className] or {}
             for subClassName, _ in pairs(LF.referenceItems[className]) do
@@ -755,5 +752,6 @@ function LF.refreshClassSelect()
         end
     end
 
+    LF.RefreshFilterWindowRuleList()
     content:SetHeight(yOffset)
 end

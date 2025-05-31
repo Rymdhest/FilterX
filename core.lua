@@ -9,6 +9,17 @@ eventFrame:RegisterEvent("BAG_UPDATE")
 eventFrame:RegisterEvent("MERCHANT_SHOW")
 eventFrame:RegisterEvent("MERCHANT_UPDATE")
 eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
+eventFrame:RegisterEvent("ITEM_PUSH")
+
+local lastSoldItem = nil
+SLASH_LOOTFILTER1 = "/LF"
+SLASH_LOOTFILTER2 = "/LootFilter"
+local MAX_AT_ONCE = 80
+local isAutoing = false
+
+SlashCmdList["LOOTFILTER"] = function(msg)
+    LF.showMainWindow()
+end
 
 local function AddToTooltip(tooltip)
     -- Avoid adding multiple times
@@ -36,6 +47,15 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
+local function removeItemAutoSell(itemLink)
+    if not LF.GetSelectedFilter() then return end
+    local autoAddRule = LF.getRuleByName("Auto Add From Vendoring")
+    if not autoAddRule then return end
+    if LF.RemoveItemIDFromRule(autoAddRule, tonumber(itemLink:match("item:(%d+)"))) then
+        print("removed "..itemLink.." from auto sell")
+    end
+end
+
 function LF:ADDON_LOADED(addonName)
     if addonName == name then
         LootFilterDB = LootFilterDB or {}
@@ -53,8 +73,18 @@ function LF:ADDON_LOADED(addonName)
         GameTooltip:HookScript("OnTooltipCleared", function(self)
             self.__LF_CustomLineAdded = false
         end)
+        -- Hook into Buyback function
+        hooksecurefunc("BuybackItem", function(index)
+            if not LF.GetSelectedFilter().isAutoAddWhenVendoring then return end
+            local itemLink = GetBuybackItemLink(index)
+            if itemLink then
+                removeItemAutoSell(itemLink)
+            end
+        end)
     end
 end
+
+
 
 local function checkConditionForRuleAndItem(rule, item)
 
@@ -83,7 +113,7 @@ local function checkConditionForRuleAndItem(rule, item)
     if rule.goldValueMin and item.sellPrice < rule.goldValueMin then return false end
     if rule.goldValueMax and item.sellPrice > rule.goldValueMax then return false end
     if rule.countMin and item.count < rule.countMin then return false end
-    if rule.countMax and item.count > rule.countMax then return false end
+    --if rule.countMax and item.count > rule.countMax then return false end
 
     local numRarities = 0
     for rarity, data in pairs(rule.rarity) do
@@ -144,62 +174,119 @@ function LF.EvaluateActionForItemIDAgainstRules(itemID)
     return bestAction
 end
 
-function LF.PerformDeleteCheckInventory()
-    local currPrice
+local function deleteItemBagSlot(bag, slot, link)
+    PickupContainerItem(bag, slot)
+    DeleteCursorItem()
+    print("|cffff0000Deleted:|r "..link)
+end
 
+function LF.PerformDeleteCheckInventory()
+    isAutoing = true
     for bag = -2,4 do
         for slot = 1, GetContainerNumSlots(bag) do
             local link = GetContainerItemLink(bag,slot)
             if link then
                 local itemID = tonumber(link:match("item:(%d+)"))
                 local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
-                if action == "Delete" then
+                if action == "Delete" then deleteItemBagSlot(bag, slot, link) end
+            end
+        end
+    end
+    C_Timer.After(1, function()
+        isAutoing = false
+    end)
+end
+
+function LF.PerformSellInventory()
+  local currPrice
+    isAutoing = true
+    local numItemsAffect = 0
+
+    for bag = 0,4 do
+        if numItemsAffect > MAX_AT_ONCE then 
+            C_Timer.After(0.1, function()
+                LF.PerformSellInventory()
+            end)
+            return
+        end
+        for slot = 1, GetContainerNumSlots(bag) do
+        local link = GetContainerItemLink(bag,slot)
+        if link then
+            local itemID = tonumber(link:match("item:(%d+)"))
+            local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
+            if action == "Sell" then
+                currPrice = select(11, LF.GetItemInfo(link)) * select(2, GetContainerItemInfo(bag, slot))
+                if currPrice > 0 then
                     PickupContainerItem(bag, slot)
-                    DeleteCursorItem()
-                    print("|cffff0000Deleted:|r "..link)
+                    PickupMerchantItem()
+                    print("Sold".." "..link)
+                    numItemsAffect = numItemsAffect +1
                 end
+                elseif action == "Delete" then 
+                    deleteItemBagSlot(bag, slot, link)
+                    numItemsAffect = numItemsAffect +1
+                end
+            end
+        end
+    end
+    C_Timer.After(1, function()
+        isAutoing = false
+    end)
+end
+-- Function to track sold items based on locked items
+local function DetectSoldItem()
+    for bag = 0, 4 do
+        for slot = 1, GetContainerNumSlots(bag) do
+            local itemLink = GetContainerItemLink(bag, slot)
+            local _, _, locked = GetContainerItemInfo(bag, slot)
+            if locked and itemLink then
+                lastSoldItem = itemLink
+                return
             end
         end
     end
 end
 
-function LF.PerformSellInventory()
-  local currPrice
 
-  for bag = 0,4 do
-    for slot = 1, GetContainerNumSlots(bag) do
-      local item = GetContainerItemLink(bag,slot)
-      if item then
-        local itemID = tonumber(item:match("item:(%d+)"))
-        local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
-        if action == "Sell" then
-          currPrice = select(11, LF.GetItemInfo(item)) * select(2, GetContainerItemInfo(bag, slot))
-          if currPrice > 0 then
-            PickupContainerItem(bag, slot)
-            PickupMerchantItem()
-            print("SOLD".." "..item)
-
-          end
-        end
-      end
+local function addItemAutoSell(lastSoldItem)
+    if not LF.GetSelectedFilter() then return end
+    if isAutoing then return end
+    local autoAddRule = LF.getRuleByName("Auto Add From Vendoring")
+    if not autoAddRule then
+        autoAddRule = LF.createNewRule()
+        autoAddRule.name = "Auto Add From Vendoring"
+        autoAddRule.mode = "Items"
     end
-  end
+    if LF.AddItemIDToRule(autoAddRule, tonumber(lastSoldItem:match("item:(%d+)"))) then
+        print("Added "..lastSoldItem.." to auto sell")
+    end
 end
 
 function LF:BAG_UPDATE(bagID)
-    LF.PerformDeleteCheckInventory()
+    --LF.PerformDeleteCheckInventory()
 end
 
 function LF:MERCHANT_SHOW()
+    lastSoldItem = nil -- Reset on vendor open
     if LF.db.   isAutoVendoring then
         LF.PerformSellInventory()
     end
 end
 
 function LF:MERCHANT_UPDATE()
-    -- Example: restock items
+    if not LF.GetSelectedFilter().isAutoAddWhenVendoring then return end
+    if lastSoldItem then
+        addItemAutoSell(lastSoldItem)
+        lastSoldItem = nil -- Reset after processing sale
+    end
 end
 
 function LF:ITEM_LOCK_CHANGED(bagID, slotID)
-    -- Useful for tracking item usage (e.g., selling, moving)
+    DetectSoldItem()
+end
+
+function LF:ITEM_PUSH(bagID)
+    C_Timer.After(0.1, function()
+        LF.PerformDeleteCheckInventory()
+    end)
 end

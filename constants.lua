@@ -12,11 +12,11 @@ LF.Colors = {
 }
 
 LF.actions = {
-    ["Keep"]       = {priority = 1, icon = "Interface\\Icons\\INV_Misc_Bag_07"},
-    ["Delete"]     = {priority = 2, icon = "Interface\\Icons\\Ability_Creature_Cursed_02"},
-    ["Disenchant"] = {priority = 3, icon = "Interface\\Icons\\Spell_Holy_RemoveCurse"},
-    ["Sell"]       = {priority = 4, icon = "Interface\\Icons\\INV_Misc_Coin_02"},
-    ["Nothing"]    = {priority = 5, icon = "Interface\\Icons\\INV_Misc_QuestionMark"},
+    ["Keep"]       = {priority = 1, icon = "Interface\\Icons\\INV_Misc_Bag_07", color = {0.10, 1.00, 0.10}},
+    ["Delete"]     = {priority = 2, icon = "Interface\\Icons\\Ability_Creature_Cursed_02", color = {1.00, 0.10, 0.10}},
+    ["Disenchant"] = {priority = 3, icon = "Interface\\Icons\\Spell_Holy_RemoveCurse", color = {0.00, 0.44, 0.87}},
+    ["Sell"]       = {priority = 4, icon = "Interface\\Icons\\INV_Misc_Coin_02", color = {1.00, 1.00, 0.00}},
+    ["Nothing"]    = {priority = 5, icon = "Interface\\Icons\\INV_Misc_QuestionMark", color = {1.00, 1.00, 1.00}},
 }
 
 LF.modes = {

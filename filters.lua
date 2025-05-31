@@ -92,3 +92,26 @@ function LF.RenameFilter(filter, newName)
     filter.name = newName
     return true
 end
+
+local function DeepCopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == "table" then
+        copy = {}
+        for k, v in next, orig, nil do
+            copy[DeepCopy(k)] = DeepCopy(v)
+        end
+        setmetatable(copy, DeepCopy(getmetatable(orig)))
+    else
+        copy = orig
+    end
+    return copy
+end
+
+function LF.CopyFilter(originalFilter)
+    local newFilter = DeepCopy(originalFilter)
+    newFilter.name = originalFilter.name.." (copy)"
+    table.insert(LootFilterDB.filters, newFilter)
+    LF.SetSelectedFilterByName(newFilter.name)
+    return newFilter
+end

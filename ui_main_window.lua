@@ -112,7 +112,7 @@ function LF.createMainWindow()
                 end
             end,
             timeout = 0,
-            whileDead = true,
+            whileDead = true,   
             hideOnEscape = true,
             preferredIndex = 3
         }
@@ -126,7 +126,7 @@ function LF.createMainWindow()
     copyFilterButton:SetText("Copy Filter")
     copyFilterButton:SetPoint("LEFT", deleteFilterButton, "RIGHT", 0, 0)
     copyFilterButton:SetScript("OnClick", function()
-            LF.showFilterWindow()
+            LF.CopyFilter(LF.GetSelectedFilter())
     end)
 
     MainWindow:SetFrameStrata("LOW")

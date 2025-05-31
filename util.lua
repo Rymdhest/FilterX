@@ -1,5 +1,12 @@
 LF = LF or {}
 
+function LF.RGBToHex(r, g, b)
+    if r <= 1 and g <= 1 and b <= 1 then
+        r, g, b = r * 255, g * 255, b * 255
+    end
+    return string.format("%02X%02X%02X", r, g, b)
+end
+
 function LF.isNameAllowed(name)
     if name == nil or name == "" or  string.lower(name) == "nil" then
         return false

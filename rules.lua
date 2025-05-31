@@ -12,6 +12,14 @@ function LF.SetSelectedRuleByName(name)
     return false
 end
 
+function LF.getRuleByName(name)
+    for _, rule in ipairs(LF.GetSelectedFilter().rules or {}) do
+        if rule.name == name then
+            return rule
+        end
+    end
+    print("Could not find rule.")
+end
 
 function LF.GetSelectedRule()
     for _, rule in ipairs(LF.GetSelectedFilter().rules or {}) do
@@ -77,11 +85,41 @@ end
 function LF.describeRule(rule)
     local parts = {}
 
+    -- Action and enabled status
+    table.insert(parts, "|cff" .. LF.RGBToHex(unpack(LF.actions[rule.action].color)) ..rule.action.. "|r")
+
+    
+    if rule.mode == "Items" then
+
+        local count = 0
+        local max = 30
+        for itemID, value in pairs(rule.itemIDs) do
+            count = count+1
+        end
+        local itemstring = ""
+        local count2 = 0
+        for itemID, value in pairs(rule.itemIDs) do
+            if count2 >= max then 
+                itemstring = itemstring.. " + "..count-count2.." more"
+                break
+            end
+            local item = LF.GetItemInfoObject(itemID)
+            local icon = "Interface\\Icons\\INV_Misc_QuestionMark"
+            if item then icon = item.icon end
+            local name = ""
+            local color = LF.RGBToHex(unpack(LF.ItemRarities[item.quality].color))
+            if count < 4 then name = " |cff"..color..item.name.."|r " end
+            itemstring = itemstring.." |T" .. icon ..":13:13:0:0|t"..name
+            count2 = count2+1
+        end
+
+        table.insert(parts, itemstring)
+        return table.concat(parts, "|")
+    end
+
     local moreThanSuffix = " or more"
     local lessThanSuffix = " or less"
 
-    -- Action and enabled status
-    table.insert(parts, rule.isEnabled and ("|cff00ff00" .. rule.action .. "|r") or ("|cffff0000" .. rule.action .. "|r"))
 
     -- Regex or itemIDs
     if rule.isUseIDs and #rule.itemIDs > 0 then
@@ -156,10 +194,8 @@ function LF.describeRule(rule)
             end
         end
     end
-
     -- Sort by rarity ID
     table.sort(temp, function(a, b) return a.id < b.id end)
-
     -- Build final formatted list
     local rarities = {}
     for _, entry in ipairs(temp) do
@@ -168,18 +204,15 @@ function LF.describeRule(rule)
         local colorCode = string.format("|cff%02x%02x%02x", r, g, b)
         table.insert(rarities, colorCode .. entry.name .. "|r")
     end
-
     if #rarities > 0 and #rarities <= #LF.ItemRarities then
         table.insert(parts, "Rarity: " .. table.concat(rarities, ", "))
     end
 
-    -- Type filters
-    local function addType(desc, value)
-        if value ~= "Any" then
-            table.insert(parts, desc .. ": " .. value)
-        end
-    end
+
     --addType("Recipe", rule.recipe)
+    for class, subclasses in pairs(rule.classes) do
+        table.insert(parts, class)
+    end
 
     -- Loot alert
     if rule.lootAlert then
@@ -227,12 +260,26 @@ end
 
 function LF.AddItemIDToRule(rule, itemID)
     rule.itemIDs = rule.itemIDs or {}
-    rule.itemIDs[itemID] = true
+    if rule.itemIDs[itemID] then
+        return false
+    else
+        rule.itemIDs[itemID] = true
+        LF.RefreshRuleWindowItemList()
+        LF.RefreshFilterWindowRuleList()
+        return true
+    end
 end
 
+
+
 function LF.RemoveItemIDFromRule(rule, itemID)
-    if rule.itemIDs then
+    if rule.itemIDs and rule.itemIDs[itemID] then
         rule.itemIDs[itemID] = nil
+        LF.RefreshRuleWindowItemList()
+        LF.RefreshFilterWindowRuleList()
+        return true
+    else
+        return false
     end
 end
 
