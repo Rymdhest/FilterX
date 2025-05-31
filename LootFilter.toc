@@ -5,13 +5,14 @@
 ## Version: 1.0.0
 
 ## SavedVariables: LootFilterDB
-
 core.lua
+LibDeflate.lua
 constants.lua
 util.lua
 itemClassLookup.lua
 filters.lua
 rules.lua
 ui_main_window.lua
+ui_import_export.lua
 ui_filter_window.lua
 ui_rule_window.lua

@@ -71,7 +71,7 @@ function LF.createMainWindow()
     importFilterButton:SetText("Import Filter")
     importFilterButton:SetPoint("LEFT", newFilterButton, "RIGHT", 0, 0)
     importFilterButton:SetScript("OnClick", function()
-        LF.showFilterWindow()
+        LF.showImporttWindow(true, "Paste here...")
     end)
 
     -- edit filter button
@@ -89,7 +89,15 @@ function LF.createMainWindow()
     exportFilterButton:SetText("Export Filter")
     exportFilterButton:SetPoint("LEFT", editFilterButton, "RIGHT", 0, 0)
     exportFilterButton:SetScript("OnClick", function()
-            LF.showFilterWindow()
+
+        local LibDeflate = LibStub("LibDeflate")
+        local serializer = LibStub("LibSerialize")
+        local data = LF.GetSelectedFilter()
+        local serialized = serializer:Serialize(data)
+        local compressed = LibDeflate:CompressDeflate(serialized)
+        local encoded = LibDeflate:EncodeForPrint(compressed)
+        LF.showImporttWindow(false, encoded)
+
     end)
 
             -- delete filter button

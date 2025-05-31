@@ -112,7 +112,7 @@ local function checkConditionForRuleAndItem(rule, item)
     if rule.levelRequirementMax and item.requiredLevel > rule.levelRequirementMax then return false end
     if rule.goldValueMin and item.sellPrice < rule.goldValueMin then return false end
     if rule.goldValueMax and item.sellPrice > rule.goldValueMax then return false end
-    if rule.countMin and item.count < rule.countMin then return false end
+    --if rule.countMin and item.count < rule.countMin then return false end
     --if rule.countMax and item.count > rule.countMax then return false end
 
     local numRarities = 0
@@ -204,7 +204,7 @@ function LF.PerformSellInventory()
 
     for bag = 0,4 do
         if numItemsAffect > MAX_AT_ONCE then 
-            C_Timer.After(0.1, function()
+            C_Timer.After(1.0, function()
                 LF.PerformSellInventory()
             end)
             return
