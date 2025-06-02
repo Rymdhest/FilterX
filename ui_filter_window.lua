@@ -46,6 +46,21 @@ function LF.createFilterWindow()
         end
         
     end)
+
+    FilterWindow.autoAddItemDisenchantCheckbox = CreateFrame("CheckButton", "autoAddItemDisenchantCheckbox", FilterWindow, "UICheckButtonTemplate")
+    FilterWindow.autoAddItemDisenchantCheckbox:SetPoint("TOPLEFT", FilterWindow, "TOP", 0, -30)
+    FilterWindow.autoAddItemDisenchantCheckbox.text = _G[FilterWindow.autoAddItemDisenchantCheckbox:GetName() .. "Text"]
+    FilterWindow.autoAddItemDisenchantCheckbox.text:SetText("Auto add Disenchanted items")
+    FilterWindow.autoAddItemDisenchantCheckbox:SetScript("OnClick", function(self)
+        local checked = self:GetChecked()
+        if checked then
+            LF.setAutoAddDisenchant(true)
+        else
+            LF.setAutoAddDisenchant(false)
+        end
+        
+    end)
+
     FilterWindow.autoAddItemCheckbox:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:ClearLines()
@@ -57,6 +72,16 @@ function LF.createFilterWindow()
         GameTooltip:Hide()
     end)
 
+        FilterWindow.autoAddItemDisenchantCheckbox:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+        GameTooltip:SetText("Enable to automatically add items you manually disenchant to a generated filter sell rule.", 1, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+
+    FilterWindow.autoAddItemDisenchantCheckbox:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
 
     -- Create the scroll frame
     FilterWindow.scrollFrame = CreateFrame("ScrollFrame", "FilterScrollFrame", FilterWindow, "UIPanelScrollFrameTemplate")
@@ -104,6 +129,7 @@ function LF.showFilterWindow()
     FilterWindow:SetPoint("CENTER", LF.MainWindow, "CENTER", 20, -20)
     FilterWindow.nameInputBox:SetText(LF.GetSelectedFilter().name)
     FilterWindow.autoAddItemCheckbox:SetChecked(LF.GetSelectedFilter().isAutoAddWhenVendoring)
+    FilterWindow.autoAddItemDisenchantCheckbox:SetChecked(LF.GetSelectedFilter().isAutoAddWhenDisenchanting)
     LF.RefreshFilterWindowRuleList()
     FilterWindow:Show()
     return true

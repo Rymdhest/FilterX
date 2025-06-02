@@ -42,7 +42,8 @@ function LF.CreateNewFilter()
     local filter = {
         name = uniqueName,
         rules = {},
-        isAutoAddWhenVendoring = false
+        isAutoAddWhenVendoring = false,
+        isAutoAddWhenDisenchanting = false,
     }
 
     table.insert(LF.db.filters, filter)
@@ -67,6 +68,14 @@ function LF.setAutoAddVendor(setTo)
         LF.GetSelectedFilter().isAutoAddWhenVendoring = setTo
     end
 end
+
+
+function LF.setAutoAddDisenchant(setTo)
+    if LF.GetSelectedFilter() then
+        LF.GetSelectedFilter().isAutoAddWhenDisenchanting = setTo
+    end
+end
+
 
 function LF.addRule(filter, rule)
     if not filter.rules then

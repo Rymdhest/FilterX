@@ -13,6 +13,7 @@ itemClassLookup.lua
 filters.lua
 rules.lua
 ui_main_window.lua
+ui_disenchant_window.lua
 ui_import_export.lua
 ui_filter_window.lua
 ui_rule_window.lua

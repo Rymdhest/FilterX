@@ -10,12 +10,29 @@ eventFrame:RegisterEvent("MERCHANT_SHOW")
 eventFrame:RegisterEvent("MERCHANT_UPDATE")
 eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
 eventFrame:RegisterEvent("ITEM_PUSH")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+eventFrame:RegisterEvent("LOOT_OPENED")
+eventFrame:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
+
+eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
 
 local lastSoldItem = nil
 SLASH_LOOTFILTER1 = "/LF"
 SLASH_LOOTFILTER2 = "/LootFilter"
 local MAX_AT_ONCE = 80
 local isAutoing = false
+
+local pendingDisenchantItem = nil
+local UseContainerItemTime = 0
+local startDisenchantTime = 0
+local suceedDisenchantTime = 0
+
+local lastAtoDisenchantClickTime = 0
+
 
 SlashCmdList["LOOTFILTER"] = function(msg)
     LF.showMainWindow()
@@ -61,8 +78,9 @@ function LF:ADDON_LOADED(addonName)
         LootFilterDB = LootFilterDB or {}
         LF.db = LootFilterDB
         LF.db.filters = LF.db.filters or {}
-
         LF.db.isAutoVendoring = true
+
+        LF.isAutoDisenchanting = false
 
         eventFrame:UnregisterEvent("ADDON_LOADED")
 
@@ -81,6 +99,14 @@ function LF:ADDON_LOADED(addonName)
                 removeItemAutoSell(itemLink)
             end
         end)
+
+        LF.showDisenchantWindow()
+
+        hooksecurefunc("UseContainerItem", function(bag, slot)
+            pendingDisenchantItem = GetContainerItemLink(bag, slot)
+            UseContainerItemTime = GetTime()
+        end)
+
     end
 end
 
@@ -180,6 +206,33 @@ local function deleteItemBagSlot(bag, slot, link)
     print("|cffff0000Deleted:|r "..link)
 end
 
+
+function LF.FindNextDisenchantableItem()
+    local found = 0
+    local bag1, slot1
+    for bag = 0, 4 do
+        for slot = 1, GetContainerNumSlots(bag) do
+            local link = GetContainerItemLink(bag, slot)
+            if link then
+                local itemID = tonumber(link:match("item:(%d+)"))
+                local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
+                if (action == "Disenchant") then
+                    found = found+1
+                    if found < 2 then
+                        bag1 = bag
+                        slot1 = slot
+                    end
+                    if found >= 2 then 
+                        return bag1, slot1, bag, slot end
+                end
+            end
+        end
+    end                 
+    if found >= 1 then 
+    return bag1, slot1, bag1, slot1 end
+    return nil -- no item found
+end
+
 function LF.PerformDeleteCheckInventory()
     isAutoing = true
     for bag = -2,4 do
@@ -251,14 +304,30 @@ end
 local function addItemAutoSell(lastSoldItem)
     if not LF.GetSelectedFilter() then return end
     if isAutoing then return end
-    local autoAddRule = LF.getRuleByName("Auto Add From Vendoring")
-    if not autoAddRule then
-        autoAddRule = LF.createNewRule()
-        autoAddRule.name = "Auto Add From Vendoring"
-        autoAddRule.mode = "Items"
+    local rule = LF.getRuleByName("Auto Add From Vendoring")
+    if not rule then
+        rule = LF.createNewRule()
+        rule.name = "Auto Add From Vendoring"
+        rule.mode = "Items"
+        rule.action = "Sell"
     end
-    if LF.AddItemIDToRule(autoAddRule, tonumber(lastSoldItem:match("item:(%d+)"))) then
+    if LF.AddItemIDToRule(rule, tonumber(lastSoldItem:match("item:(%d+)"))) then
         print("Added "..lastSoldItem.." to auto sell")
+    end
+end
+
+local function addItemAutoDisenchant(item)
+    if not LF.GetSelectedFilter() then return end
+    if LF.isAutoDisenchanting then return end
+    local rule = LF.getRuleByName("Auto Add From Disenchanting")
+    if not rule then
+        rule = LF.createNewRule()
+        rule.name = "Auto Add From Disenchanting"
+        rule.mode = "Items"
+        rule.action = "Disenchant"
+    end
+    if LF.AddItemIDToRule(rule, tonumber(item:match("item:(%d+)"))) then
+        print("Added "..item.." to auto Disenchant")
     end
 end
 
@@ -289,4 +358,62 @@ function LF:ITEM_PUSH(bagID)
     C_Timer.After(0.1, function()
         LF.PerformDeleteCheckInventory()
     end)
+end
+
+function LF:UNIT_SPELLCAST_SUCCEEDED(unit, spellName, type, lineID)
+    if unit == "player" and spellName == GetSpellInfo(13262) then
+        local time = GetTime()
+        if time - startDisenchantTime < 4 and pendingDisenchantItem then
+            suceedDisenchantTime = time
+        else 
+            pendingDisenchantItem = nil
+        end
+    end
+end
+
+function LF:LOOT_OPENED(autoLoot)
+        local time = GetTime()
+        if time - suceedDisenchantTime < 1 and pendingDisenchantItem then
+            if time - LF.lastAtoDisenchantClickTime > 4 then
+                addItemAutoDisenchant(pendingDisenchantItem)
+            end
+        end
+        pendingDisenchantItem = nil
+end
+
+
+
+function LF:UNIT_SPELLCAST_START(unit)
+    if unit == "player" and UnitCastingInfo("player") == GetSpellInfo(13262) then
+        local time = GetTime()
+        if time - UseContainerItemTime < 1 and pendingDisenchantItem then
+            startDisenchantTime = time
+            if time-LF.lastAtoDisenchantClickTime > 1 then
+                LF.lastAtoDisenchantClickTime = 0
+            end
+        else 
+            pendingDisenchantItem = nil
+        end
+    end
+end
+
+function LF:CURRENT_SPELL_CAST_CHANGED()
+    print("CURRENT_SPELL_CAST_CHANGED")
+end
+
+
+function LF:UNIT_SPELLCAST_INTERRUPTED()
+    LF.lastAtoDisenchantClickTime = 0
+end
+
+function LF:UNIT_SPELLCAST_STOP()
+    print("UNIT_SPELLCAST_STOP")
+end
+
+function LF:UNIT_SPELLCAST_FAILED()
+    LF.lastAtoDisenchantClickTime = 0
+end
+
+function LF:UNIT_SPELLCAST_FAILED_QUIET()
+    LF.lastAtoDisenchantClickTime = 0
 end
