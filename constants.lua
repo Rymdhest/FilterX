@@ -24,6 +24,12 @@ LF.modes = {
     Items     =  "Exact items",
 }
 
+LF.basicOptions = {
+    ["Any"] = {ID = 1},
+    ["Yes"]       = {ID = 2},
+    ["No"]    = {ID = 3},
+}
+
 LF.ItemRarities = {
     [0] = { name = "Poor",      color = {0.62, 0.62, 0.62}},
     [1] = { name = "Common",    color = {1.00, 1.00, 1.00}},

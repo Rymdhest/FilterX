@@ -64,6 +64,22 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
+function LF.IsItemAlreadyKnown(itemLink)
+    -- Create a hidden tooltip to scan
+    local tooltip = CreateFrame("GameTooltip", "ScanTooltip", nil, "GameTooltipTemplate")
+    tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    tooltip:SetHyperlink(itemLink.link)
+
+    for i = 1, tooltip:NumLines() do
+        local text = _G["ScanTooltipTextLeft" .. i]:GetText()
+        if text and text:lower():find("already known") then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function removeItemAutoSell(itemLink)
     if not LF.GetSelectedFilter() then return end
     local autoAddRule = LF.getRuleByName("Auto Add From Vendoring")
@@ -113,17 +129,16 @@ end
 
 
 local function checkConditionForRuleAndItem(rule, item)
+    --print(item.class, item.subclass, item.name, item.id, item.level, item.requiredLevel, item.sellPrice, item.count)
+    --print(item.class.."  |  "..item.subClass)
+
 
     if not item then
         print("Item is nil, cannot check rule.")
         return false
     end
-    --print(item.class, item.subclass, item.name, item.id, item.level, item.requiredLevel, item.sellPrice, item.count)
 
-    if rule.regex and rule.regex ~= "" and string.match(item.name, rule.regex) then
-        return true
-    end
-
+        ------------------ WORDS ------------------------
     if rule.words and #rule.words > 0 then
         for _, word in ipairs(rule.words) do
             if string.find(item.name:lower(), word:lower()) then
@@ -131,7 +146,13 @@ local function checkConditionForRuleAndItem(rule, item)
             end
         end
     end
+    if rule.regex and rule.regex ~= "" and string.match(item.name, rule.regex) then
+        return true
+    end
 
+
+
+    ------------------ MIN-MAX ------------------------
     if rule.itemLevelMin and item.level < rule.itemLevelMin then return false end
     if rule.itemLevelMax and item.level > rule.itemLevelMax then return false end
     if rule.levelRequirementMin and item.requiredLevel < rule.levelRequirementMin then return false end
@@ -141,27 +162,37 @@ local function checkConditionForRuleAndItem(rule, item)
     --if rule.countMin and item.count < rule.countMin then return false end
     --if rule.countMax and item.count > rule.countMax then return false end
 
+
+    ------------------ RARITY ------------------------
     local numRarities = 0
     for rarity, data in pairs(rule.rarity) do
         if not data==false then numRarities = numRarities+1 end
     end
-
     if numRarities > 0 then 
         if not rule.rarity[LF.ItemRarities[item.quality].name] then return false end
     end
 
 
-    --print(item.class.."  |  "..item.subClass)
 
+    ------------------ CLASSES ------------------------
     local numClasses = 0
     for class, subclasses in pairs(rule.classes) do
         numClasses = numClasses+1
     end
+    if numClasses > 0 then
+        if not rule.classes[item.class] then return false end
+        if not rule.classes[item.class][item.subClass] then return false end
+    end
 
-if numClasses > 0 then
-    if not rule.classes[item.class] then return false end
-    if not rule.classes[item.class][item.subClass] then return false end
-end
+
+    ------------------ LEARNED ------------------------
+    if rule.learned == "Yes" then
+       if not LF.IsItemAlreadyKnown(item) then return false end
+    end
+    if rule.learned == "No" then
+       if LF.IsItemAlreadyKnown(item) then return false end
+    end
+
 
     return true
 end

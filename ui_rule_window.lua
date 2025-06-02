@@ -118,9 +118,10 @@ local function handleModeChange(mode)
     setShowOrHideFram(RuleWindow.goldValue, isItemListMode)
     setShowOrHideFram(RuleWindow.itemLevel, isItemListMode)
     setShowOrHideFram(RuleWindow.levelReq, isItemListMode)
-    setShowOrHideFram(RuleWindow.itemCount, isItemListMode)
+    --ssetShowOrHideFram(RuleWindow.itemCount, isItemListMode)
     setShowOrHideFram(RuleWindow.rarityBoxes, isItemListMode)
     setShowOrHideFram(RuleWindow.classSelect, isItemListMode)
+    setShowOrHideFram(RuleWindow.learnedSelect, isItemListMode)
 
 end
 
@@ -154,6 +155,37 @@ local function createModeSelect()
     end)
     return modeDropdown
 end
+
+local function createLearnedSelect()
+    local learnedDropdown = CreateFrame("Frame", "LearnedDropdown", RuleWindow, "UIDropDownMenuTemplate")
+    local nameText = learnedDropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    learnedDropdown:SetPoint("LEFT", nameText, "RIGHT", -10, 0)
+    nameText:SetPoint("TOPRIGHT", RuleWindow, "BOTTOMRIGHT", -100, 50)
+    nameText:SetText("Learned:")
+    nameText:SetTextColor(unpack(LF.Colors.Text))
+    UIDropDownMenu_SetWidth(learnedDropdown, 60)
+    UIDropDownMenu_Initialize(learnedDropdown, function(self, level)
+        for basicOptions in pairs(LF.basicOptions) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = basicOptions
+            info.func = function()
+                -- When clicked, save selection and update dropdown text
+                learnedDropdown.selectedLearned = basicOptions
+                UIDropDownMenu_SetText(learnedDropdown, basicOptions)
+                
+                -- Here update the rule's action to this selection
+                if LF.GetSelectedRule() then
+                    LF.GetSelectedRule().learned = basicOptions
+                    LF.RefreshFilterWindowRuleList()
+                end
+            end
+            info.checked = (learnedDropdown.selectedLearned == basicOptions)
+            UIDropDownMenu_AddButton(info, level)
+        end
+    end)
+    return learnedDropdown
+end
+
 
 local function createActionSelect()
     local nameText = RuleWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -272,7 +304,7 @@ local function createMinMaxInput(labelText, yOffset, minVarName, maxVarName, fra
 
     -- Title
     frame.title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    frame.title:SetPoint("TOPRIGHT", RuleWindow, "TOP", 95, yOffset)
+    frame.title:SetPoint("TOPRIGHT", RuleWindow, "TOP", 85, yOffset)
     frame.title:SetText(labelText)
     frame.title:SetTextColor(unpack(LF.Colors.Text))
 
@@ -306,7 +338,7 @@ end
 local function createRarityCheckboxes()
     local rarityContainer = CreateFrame("Frame", nil, RuleWindow)
     rarityContainer:SetSize(200, #LF.ItemRarities*20)
-    rarityContainer:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -30, 40)
+    rarityContainer:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -30, 90)
 
     local rarityCheckboxes = {}
     for id, data in pairs(LF.ItemRarities) do
@@ -347,12 +379,13 @@ function LF.createRuleWindow()
 
     RuleWindow.nameInput = createNameEdit()
     RuleWindow.actionSelect = createActionSelect()
+    RuleWindow.learnedSelect = createLearnedSelect()
     RuleWindow.modeSelect = createModeSelect()
     RuleWindow.itemList = createItemList()
-    RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -100, "goldValueMin", "goldValueMax", "GoldValue")
-    RuleWindow.itemLevel = createMinMaxInput("Item Level:", -120, "itemLevelMin", "itemLevelMax", "ItemLevel")
-    RuleWindow.levelReq = createMinMaxInput("Level Req:", -140, "levelRequirementMin", "levelRequirementMax", "LevelReq")
-    RuleWindow.itemCount = createMinMaxInput("Item Count:", -160, "countMin", "countMax", "ItemCount")
+    RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -80, "goldValueMin", "goldValueMax", "GoldValue")
+    RuleWindow.itemLevel = createMinMaxInput("Item Level:", -100, "itemLevelMin", "itemLevelMax", "ItemLevel")
+    RuleWindow.levelReq = createMinMaxInput("Level Req:", -120, "levelRequirementMin", "levelRequirementMax", "LevelReq")
+    --RuleWindow.itemCount = createMinMaxInput("Item Count:", -160, "countMin", "countMax", "ItemCount")
     RuleWindow.rarityBoxes = createRarityCheckboxes()
 
     RuleWindow.classSelect = LF.createClassSelect()
@@ -385,6 +418,10 @@ function LF.showRuleWindow()
     UIDropDownMenu_SetText(RuleWindow.actionSelect, rule.action.." |T" .. LF.actions[rule.action].icon ..":16:16:0:0|t")
     UIDropDownMenu_Refresh(RuleWindow.actionSelect)
 
+    RuleWindow.learnedSelect.selectedLearned = rule.learned
+    UIDropDownMenu_SetText(RuleWindow.learnedSelect, rule.learned)
+    UIDropDownMenu_Refresh(RuleWindow.learnedSelect)
+
     RuleWindow.modeSelect.selectedMode = rule.mode
     UIDropDownMenu_SetText(RuleWindow.modeSelect, LF.modes[rule.mode])
     UIDropDownMenu_Refresh(RuleWindow.modeSelect)
@@ -395,14 +432,8 @@ function LF.showRuleWindow()
     RuleWindow.itemLevel.max:SetText(rule.itemLevelMax or "")
     RuleWindow.levelReq.min:SetText(rule.levelRequirementMin or "")
     RuleWindow.levelReq.max:SetText(rule.levelRequirementMax or "")
-    RuleWindow.itemCount.min:SetText(rule.countMin or "")
-    RuleWindow.itemCount.max:SetText(rule.countMax or "")
-
-    --UIDropDownMenu_Initialize(RuleWindow.equippable.dropDown1, RuleWindow.equippable.initialize1)
-    --UIDropDownMenu_Initialize(RuleWindow.equippable.dropDown2, RuleWindow.equippable.initialize2)
-
-    --UIDropDownMenu_Initialize(RuleWindow.recipe.dropDown1, RuleWindow.recipe.initialize1)
-    --UIDropDownMenu_Initialize(RuleWindow.recipe.dropDown2, RuleWindow.recipe.initialize2)
+    --RuleWindow.itemCount.min:SetText(rule.countMin or "")
+    --RuleWindow.itemCount.max:SetText(rule.countMax or "")
 
     for id, checkbox in pairs(RuleWindow.rarityBoxes.rarityCheckboxes) do
         checkbox:SetChecked(rule.rarity and rule.rarity[LF.ItemRarities[id].name] or false)
@@ -566,7 +597,7 @@ StaticPopupDialogs["LOOTFILTER_CONFIRM_REMOVE_ITEM"] = {
 function LF.createClassSelect()
     local classSelectFrame = CreateFrame("Frame", "ClassSelectFrame", RuleWindow)
     classSelectFrame:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 10, -80)
-    classSelectFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -250, 10)
+    classSelectFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMLEFT", 210, 10)
 
     local scrollFrame = CreateFrame("ScrollFrame", "ScrollFramecc", classSelectFrame, "UIPanelScrollFrameTemplate")
     scrollFrame:SetAllPoints()
