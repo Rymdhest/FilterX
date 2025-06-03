@@ -14,11 +14,13 @@ eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 eventFrame:RegisterEvent("LOOT_OPENED")
 eventFrame:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
+eventFrame:RegisterEvent("CHAT_MSG_LOOT")
 
 eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
+
 
 local lastSoldItem = nil
 SLASH_LOOTFILTER1 = "/LF"
@@ -211,6 +213,7 @@ end
 
 function LF.EvaluateActionForItemIDAgainstRules(itemID)
     local bestAction = "Nothing"
+    local bestAlert = "Nothing"
     local bestPriority = LF.actions[bestAction].priority
     if LF.GetSelectedFilter() == nil then
         return bestAction
@@ -224,11 +227,12 @@ function LF.EvaluateActionForItemIDAgainstRules(itemID)
             if rulePriority < bestPriority then
                 bestAction = rule.action
                 bestPriority = rulePriority
+                bestAlert = rule.alert
             end
         end
     end
 
-    return bestAction
+    return bestAction, bestAlert
 end
 
 local function deleteItemBagSlot(bag, slot, link)
@@ -236,12 +240,22 @@ local function deleteItemBagSlot(bag, slot, link)
     DeleteCursorItem()
     print("|cffff0000Deleted:|r "..link)
 end
-
+local function deleteItemByLink(itemLink)
+    for bag = -2, NUM_BAG_SLOTS do
+        for slot = 1, GetContainerNumSlots(bag) do
+            local link = GetContainerItemLink(bag, slot)
+            if link == itemLink then
+                deleteItemBagSlot(bag, slot, itemLink)
+                return
+            end
+        end
+    end
+end
 
 function LF.FindNextDisenchantableItem()
     local found = 0
     local bag1, slot1
-    for bag = 0, 4 do
+    for bag = 0, NUM_BAG_SLOTS do
         for slot = 1, GetContainerNumSlots(bag) do
             local link = GetContainerItemLink(bag, slot)
             if link then
@@ -264,29 +278,12 @@ function LF.FindNextDisenchantableItem()
     return nil -- no item found
 end
 
-function LF.PerformDeleteCheckInventory()
-    isAutoing = true
-    for bag = -2,4 do
-        for slot = 1, GetContainerNumSlots(bag) do
-            local link = GetContainerItemLink(bag,slot)
-            if link then
-                local itemID = tonumber(link:match("item:(%d+)"))
-                local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
-                if action == "Delete" then deleteItemBagSlot(bag, slot, link) end
-            end
-        end
-    end
-    C_Timer.After(1, function()
-        isAutoing = false
-    end)
-end
-
 function LF.PerformSellInventory()
   local currPrice
     isAutoing = true
     local numItemsAffect = 0
 
-    for bag = 0,4 do
+    for bag = -2,NUM_BAG_SLOTS do
         if numItemsAffect > MAX_AT_ONCE then 
             C_Timer.After(1.0, function()
                 LF.PerformSellInventory()
@@ -385,9 +382,9 @@ function LF:ITEM_LOCK_CHANGED(bagID, slotID)
     DetectSoldItem()
 end
 
-function LF:ITEM_PUSH(bagID)
+function LF:ITEM_PUSH(bagID, icon)
     C_Timer.After(0.1, function()
-        LF.PerformDeleteCheckInventory()
+        --LF.PerformDeleteCheckInventory()
     end)
 end
 
@@ -429,7 +426,6 @@ function LF:UNIT_SPELLCAST_START(unit)
 end
 
 function LF:CURRENT_SPELL_CAST_CHANGED()
-    print("CURRENT_SPELL_CAST_CHANGED")
 end
 
 
@@ -438,7 +434,6 @@ function LF:UNIT_SPELLCAST_INTERRUPTED()
 end
 
 function LF:UNIT_SPELLCAST_STOP()
-    print("UNIT_SPELLCAST_STOP")
 end
 
 function LF:UNIT_SPELLCAST_FAILED()
@@ -447,4 +442,28 @@ end
 
 function LF:UNIT_SPELLCAST_FAILED_QUIET()
     LF.lastAtoDisenchantClickTime = 0
+end
+
+
+function LF:CHAT_MSG_LOOT(msg)
+    local itemLink, count = msg:match("You receive item: (.+)x(%d+)%.")
+
+    if not itemLink then
+        itemLink = msg:match("You receive item: (.+)%.")
+        count = 1
+    else
+        count = tonumber(count)
+    end
+    if itemLink then
+        local itemID = tonumber(itemLink:match("item:(%d+):"))
+        local item = LF.GetItemInfoObject(itemID)
+
+        local action, alert = LF.EvaluateActionForItemIDAgainstRules(itemID)
+        if action == "Delete" then
+            C_Timer.After(0.1, function()
+                deleteItemByLink(itemLink) 
+            end)
+        end
+        if alert ~= "Nothing" then LF.AddAlert(item.name, item.link, item.quality, item.icon, count, true, LF.alerts[alert].toast, false, false, false, false) end
+    end
 end

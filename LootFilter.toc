@@ -1,5 +1,5 @@
 ## Interface: 30300
-## Title: LootFilter
+## Title: |cff33FF33Dino|r|cffDDDDDDFilter|r  
 ## Notes: Allows players to create custom rules for filtering items.
 ## Author: OpenTTD
 ## Version: 1.0.0
@@ -17,3 +17,5 @@ ui_disenchant_window.lua
 ui_import_export.lua
 ui_filter_window.lua
 ui_rule_window.lua
+alert.lua
+alert.xml

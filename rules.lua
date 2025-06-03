@@ -75,7 +75,7 @@ function LF.createNewRule()
       },
       classes = {},
       learned = "Any",
-      lootAlert = false,
+      alert = "Nothing",
       action = "Sell",      -- keep, delete, disenchant, sell, nothing
   }
   LF.addRule(LF.GetSelectedFilter(), rule)

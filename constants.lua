@@ -19,6 +19,14 @@ LF.actions = {
     ["Nothing"]    = {priority = 5, icon = "Interface\\Icons\\INV_Misc_QuestionMark", color = {1.00, 1.00, 1.00}},
 }
 
+LF.alerts = {
+    ["Nothing"]= {toast = ""},
+    ["Small"]  = {toast = "commontoast"},
+    ["Medium"] = {toast = "defaulttoast"},
+    ["Large"]  = {toast = "heroictoast"},
+    ["Huge"]   = {toast = "legendarytoast"},
+}
+
 LF.modes = {
     Conditions  = "Conditions",
     Items     =  "Exact items",
