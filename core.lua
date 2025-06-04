@@ -149,15 +149,17 @@ local function checkConditionForRuleAndItem(rule, item)
     end
 
         ------------------ WORDS ------------------------
-    if rule.words and #rule.words > 0 then
-        for _, word in ipairs(rule.words) do
-            if string.find(item.name:lower(), word:lower()) then
-                return true
+    if rule.words then
+        local found = false
+        local empty = true
+        for word, _ in pairs(rule.words) do
+            empty = false
+            local pattern = "%f[%w]" .. word:lower() .. "%f[%W]"
+            if string.find(item.name:lower(), pattern) then
+                found = true
             end
         end
-    end
-    if rule.regex and rule.regex ~= "" and string.match(item.name, rule.regex) then
-        return true
+        if not found and not empty then return false end
     end
 
 
@@ -370,6 +372,7 @@ local function addItemAutoSell(lastSoldItem)
         rule.name = "Auto Add From Vendoring"
         rule.mode = "Items"
         rule.action = "Sell"
+        rule.locked = false
     end
     if LF.AddItemIDToRule(rule, tonumber(lastSoldItem:match("item:(%d+)"))) then
         print("Added "..lastSoldItem.." to auto sell")
@@ -385,6 +388,7 @@ local function addItemAutoDisenchant(item)
         rule.name = "Auto Add From Disenchanting"
         rule.mode = "Items"
         rule.action = "Disenchant"
+        rule.locked = false
     end
     if LF.AddItemIDToRule(rule, tonumber(item:match("item:(%d+)"))) then
         print("Added "..item.." to auto Disenchant")

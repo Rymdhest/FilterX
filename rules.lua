@@ -51,9 +51,9 @@ function LF.createNewRule()
     local rule = {
       name = uniqueName,
       isEnabled = true,
+      locked = true,
       itemIDs = {},
       words = {},
-      regex = "",
       mode = "Items",
       itemLevelMin = nil,
       itemLevelMax = nil,
@@ -286,4 +286,27 @@ end
 
 function LF.HasItemIDInRule(rule, itemID)
     return rule.itemIDs and rule.itemIDs[itemID] or false
+end
+
+function LF.AddWordToRule(rule, word)
+    rule.words = rule.words or {}
+    if rule.words[word] then
+        return false
+    else
+        rule.words[word] = true
+        LF.RefreshRuleWindowWordList()
+        LF.RefreshFilterWindowRuleList()
+        return true
+    end
+end
+
+function LF.RemoveWordFromRule(rule, word)
+    if rule.words and rule.words[word] then
+        rule.words[word] = nil
+        LF.RefreshRuleWindowWordList()
+        LF.RefreshFilterWindowRuleList()
+        return true
+    else
+        return false
+    end
 end

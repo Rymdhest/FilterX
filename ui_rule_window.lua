@@ -75,6 +75,7 @@ local function TryAddItemByInput(inputText, retryCount)
     end
 end
 
+
 local function createNameEdit()
     local nameText = RuleWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     nameText:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 10, -40)
@@ -122,8 +123,9 @@ local function handleModeChange(mode)
     setShowOrHideFram(RuleWindow.rarityBoxes, isItemListMode)
     setShowOrHideFram(RuleWindow.classSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.learnedSelect, isItemListMode)
-    setShowOrHideFram(RuleWindow.alertSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.soulboundSelect, isItemListMode)
+    setShowOrHideFram(RuleWindow.wordList, isItemListMode)
+    
 
 end
 function LF.CreateDropdown(params)
@@ -238,8 +240,65 @@ local function createActionSelect()
         end,
         onSelect = function(rule, selectedKey)
             rule.action = selectedKey
+            if rule.action == "Delete" then rule.isEnabled = false end
         end
     })
+end
+
+local function createWordList()
+    local wordListFrame = CreateFrame("Frame", "wordListFrame", RuleWindow)
+    wordListFrame:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 235, -160)
+    wordListFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -145, 170)
+
+    -- Add a scrollbar
+    local scrollFrame = CreateFrame("ScrollFrame", "ruleWordScrollFrame", wordListFrame, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetAllPoints()
+
+    wordListFrame.itemListContent = CreateFrame("Frame", "ruleWordListContent", scrollFrame)
+    wordListFrame.itemListContent:SetSize(70, 1) -- Width fixed, height will expand
+    scrollFrame:SetScrollChild(wordListFrame.itemListContent)
+
+    -- Create a border frame just behind the scrollFrame
+    local border = CreateFrame("Frame", nil, wordListFrame)
+    border:SetPoint("TOPLEFT", scrollFrame, -1, 1)
+    border:SetPoint("BOTTOMRIGHT", scrollFrame, 1, -1)
+    border:SetFrameLevel(scrollFrame:GetFrameLevel() - 1) -- place behind
+    border:SetBackdrop({
+        edgeFile = "Interface\\Buttons\\WHITE8x8", 
+        edgeSize = 1,
+    })
+    border:SetBackdropBorderColor(unpack(LF.Colors.Border))
+
+    -- Input box
+    local inputBox = CreateFrame("EditBox", "addWordDbox", wordListFrame, "InputBoxTemplate")
+    inputBox:SetSize(80, 20)
+    inputBox:SetPoint("TOPLEFT", wordListFrame, "BOTTOMLEFT", 10, -10)
+    inputBox:SetAutoFocus(false)
+    inputBox:SetFontObject("GameFontHighlightSmall")
+    -- Handle pressing Enter
+    inputBox:SetScript("OnEnterPressed", function(self)
+        local input = self:GetText()
+        self:SetText("")
+        if input and input:len() > 0 then
+            LF.AddWordToRule(LF.GetSelectedRule(), input)
+        end
+    end)
+    -- Add button
+    local addButton = CreateFrame("Button", nil, wordListFrame, "UIPanelButtonTemplate")
+    addButton:SetSize(45, 20)
+    addButton:SetPoint("LEFT", inputBox, "RIGHT", 8, 0)
+    addButton:SetText("Add")
+
+    -- Add button handler
+    addButton:SetScript("OnClick", function()
+        local input = inputBox:GetText()
+        inputBox:SetText("")
+        if input and input:len() > 0 then
+            LF.AddWordToRule(LF.GetSelectedRule(), input)
+        end
+    end)
+
+    return wordListFrame
 end
 
 local function createItemList()
@@ -411,6 +470,7 @@ function LF.createRuleWindow()
     RuleWindow.alertSelect = createAlertSelect()
     RuleWindow.soulboundSelect = createSoulboundSelect()
     RuleWindow.modeSelect = createModeSelect()
+    RuleWindow.wordList = createWordList()
     RuleWindow.itemList = createItemList()
     RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -80, "goldValueMin", "goldValueMax", "GoldValue")
     RuleWindow.itemLevel = createMinMaxInput("Item Level:", -100, "itemLevelMin", "itemLevelMax", "ItemLevel")
@@ -435,7 +495,7 @@ function LF.showRuleWindow()
     RuleWindow:SetPoint("CENTER", LF.FilterWindow, "CENTER", 20, -20)
     RuleWindow.nameInput:SetText(rule.name)
     LF.RefreshRuleWindowItemList()
-
+    LF.RefreshRuleWindowWordList()
     for _, rowData in ipairs(RuleWindow.classSelect.rows) do
         if rowData.type == "class" then
             rowData.expanded = false
@@ -478,6 +538,20 @@ function LF.showRuleWindow()
     end
 
     handleModeChange(rule.mode)
+
+    if rule.locked then
+        UIDropDownMenu_DisableDropDown(RuleWindow.modeSelect)
+        UIDropDownMenu_DisableDropDown(RuleWindow.actionSelect) 
+        RuleWindow.nameInput:EnableMouse(false)
+        RuleWindow.nameInput:SetAutoFocus(false)
+        RuleWindow.nameInput:ClearFocus()
+        RuleWindow.nameInput:SetTextColor(0.6, 0.6, 0.6) -- optional: gray out text
+    else
+        UIDropDownMenu_EnableDropDown(RuleWindow.modeSelect)
+        UIDropDownMenu_EnableDropDown(RuleWindow.actionSelect) 
+        RuleWindow.nameInput:EnableMouse(true)
+        RuleWindow.nameInput:SetTextColor(1.0, 1.0, 1.0) -- optional: gray out text
+    end
 end
 
 
@@ -516,6 +590,11 @@ local function OnItemButtonClick(self)
     end
 end
 
+local function OnWordButtonClick(self)
+    local rule = self.rule
+    local word = self.word
+    LF.RemoveWordFromRule(rule, word)
+end
 
 
 local function ShowItemTooltip(self)
@@ -537,6 +616,41 @@ function LF.OnDelayedRefreshRuleWindowItemList()
     LF.RefreshRuleWindowItemList()
 end
 
+
+function LF.RefreshRuleWindowWordList()
+    if not RuleWindow or not LF.GetSelectedRule() then return end
+    if not RuleWindow:IsShown() then return end
+    local rule = LF.GetSelectedRule()
+    -- Clear previous entries
+    for _, child in ipairs({ RuleWindow.wordList.itemListContent:GetChildren() }) do
+        child:Hide()
+        child:SetParent(nil)
+    end
+    collectgarbage("collect")
+    local i = 0
+    for word in pairs(rule.words) do
+        i = i + 1
+        local itemButton = CreateFrame("Button", nil, RuleWindow.wordList.itemListContent)
+        itemButton:SetSize(110, 15)
+        itemButton:SetPoint("TOPLEFT", 5, -(i - 1) * 17)
+        itemButton.rule = rule
+        itemButton.word = word
+        itemButton:SetScript("OnClick", OnWordButtonClick)
+
+        -- Set the item button
+        local label = itemButton:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        label:SetText(word)
+        label:SetTextColor(unpack(LF.Colors.Text)) -- default white if unknown
+        label:SetPoint("LEFT")
+        -- Highlight on hover
+        local highlight = itemButton:CreateTexture(nil, "HIGHLIGHT")
+        highlight:SetAllPoints()
+---@diagnostic disable-next-line: param-type-mismatch
+        highlight:SetTexture(1, 1, 1, 0.15)
+        itemButton.word = word
+    end
+    RuleWindow.wordList.itemListContent:SetHeight(i * 17)
+end
 
 function LF.RefreshRuleWindowItemList()
 
