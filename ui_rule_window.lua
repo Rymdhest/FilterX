@@ -123,130 +123,123 @@ local function handleModeChange(mode)
     setShowOrHideFram(RuleWindow.classSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.learnedSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.alertSelect, isItemListMode)
+    setShowOrHideFram(RuleWindow.soulboundSelect, isItemListMode)
 
+end
+function LF.CreateDropdown(params)
+    local dropdown = CreateFrame("Frame", params.labelText.."Dropdown", RuleWindow, "UIDropDownMenuTemplate")
+
+    local label = dropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("TOPRIGHT", RuleWindow, "TOPRIGHT", params.labelX or -100, params.labelY or -40)
+    label:SetText(params.labelText or "Dropdown:")
+    label:SetTextColor(unpack(LF.Colors.Text))
+
+    dropdown:SetPoint("LEFT", label, "RIGHT", -10, 0)
+    UIDropDownMenu_SetWidth(dropdown, params.width or 100)
+
+    -- Keep track of selected value and update text accordingly
+    dropdown.selectedValue = dropdown.selectedValue or nil
+
+    UIDropDownMenu_Initialize(dropdown, function(self, level)
+        for key, value in pairs(params.optionsTable) do
+            local displayText = params.getText and params.getText(key, value) or value
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = displayText
+            info.icon = params.getIcon and params.getIcon(key, value) or nil
+            info.func = function()
+                dropdown.selectedValue = key
+                UIDropDownMenu_SetText(dropdown, displayText)
+
+                if LF.GetSelectedRule() and params.onSelect then
+                    params.onSelect(LF.GetSelectedRule(), key)
+                    LF.RefreshFilterWindowRuleList()
+                end
+            end
+            info.checked = (dropdown.selectedValue == key)
+            UIDropDownMenu_AddButton(info, level)
+        end
+
+        -- Refresh selected display after init
+        if dropdown.selectedValue then
+            local selectedText = params.getText and params.getText(dropdown.selectedValue, params.optionsTable[dropdown.selectedValue]) or dropdown.selectedValue
+            UIDropDownMenu_SetText(dropdown, selectedText)
+        end
+    end)
+
+    return dropdown
 end
 
 local function createModeSelect()
-    local nameText = RuleWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    nameText:SetPoint("TOPRIGHT", RuleWindow, "TOPRIGHT", -320, -40)
-    nameText:SetText("Mode:")
-    nameText:SetTextColor(unpack(LF.Colors.Text))
-    local modeDropdown = CreateFrame("Frame", "LFModelDropdown", RuleWindow, "UIDropDownMenuTemplate")
-    modeDropdown:SetPoint("LEFT", nameText, "RIGHT", -10, 0)
-    UIDropDownMenu_SetWidth(modeDropdown, 100)
-    UIDropDownMenu_Initialize(modeDropdown, function(self, level)
-        for modeName in pairs(LF.modes) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = LF.modes[modeName]
-            info.func = function()
-                -- When clicked, save selection and update dropdown text
-                modeDropdown.selectedMode = modeName
-                UIDropDownMenu_SetText(modeDropdown, LF.modes[modeName])
-                
-                -- Here update the rule's action to this selection
-                if LF.GetSelectedRule() then
-                    LF.GetSelectedRule().mode = modeName
-                    handleModeChange(modeName)
-                    LF.RefreshFilterWindowRuleList()
-                end
-            end
-            info.checked = (modeDropdown.selectedMode == modeName)
-            UIDropDownMenu_AddButton(info, level)
+    return LF.CreateDropdown({
+        labelText = "Mode:",
+        labelX = -320,
+        labelY = -40,
+        width = 100,
+        optionsTable = LF.modes,
+        getText = function(key, value) return value end,
+        onSelect = function(rule, selectedKey)
+            rule.mode = selectedKey
+            handleModeChange(selectedKey)
         end
-    end)
-    return modeDropdown
+    })
+end
+
+local function createSoulboundSelect()
+    return LF.CreateDropdown({
+        labelText = "Binds:",
+        labelX = -210,
+        labelY = -330,
+        width = 80,
+        optionsTable = LF.bindingOptions,
+        getText = function(key) return key end,
+        onSelect = function(rule, selectedKey)
+            rule.soulbound = selectedKey
+        end
+    })
 end
 
 local function createAlertSelect()
-    local alertDropdown = CreateFrame("Frame", "AlertDropdown", RuleWindow, "UIDropDownMenuTemplate")
-    local nameText = alertDropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    alertDropdown:SetPoint("LEFT", nameText, "RIGHT", -10, 0)
-    nameText:SetPoint("TOPRIGHT", RuleWindow, "BOTTOMRIGHT", -100, 30)
-    nameText:SetText("Alert:")
-    nameText:SetTextColor(unpack(LF.Colors.Text))
-    UIDropDownMenu_SetWidth(alertDropdown, 70)
-    UIDropDownMenu_Initialize(alertDropdown, function(self, level)
-        for alerts in pairs(LF.alerts) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = alerts
-            info.func = function()
-                -- When clicked, save selection and update dropdown text
-                alertDropdown.selectedAlert = alerts
-                UIDropDownMenu_SetText(alertDropdown, alerts)
-                
-                -- Here update the rule's action to this selection
-                if LF.GetSelectedRule() then
-                    LF.GetSelectedRule().alert = alerts
-                    LF.RefreshFilterWindowRuleList()
-                end
-            end
-            info.checked = (alertDropdown.selectedAlert == alerts)
-            UIDropDownMenu_AddButton(info, level)
+    return LF.CreateDropdown({
+        labelText = "Alert:",
+        labelX = -100,
+        labelY = -360,
+        width = 70,
+        optionsTable = LF.alerts,
+        getText = function(key) return key end,
+        onSelect = function(rule, selectedKey)
+            rule.alert = selectedKey
         end
-    end)
-    return alertDropdown
+    })
 end
 
 local function createLearnedSelect()
-    local learnedDropdown = CreateFrame("Frame", "LearnedDropdown", RuleWindow, "UIDropDownMenuTemplate")
-    local nameText = learnedDropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    learnedDropdown:SetPoint("LEFT", nameText, "RIGHT", -10, 0)
-    nameText:SetPoint("TOPRIGHT", RuleWindow, "BOTTOMRIGHT", -100, 60)
-    nameText:SetText("Learned:")
-    nameText:SetTextColor(unpack(LF.Colors.Text))
-    UIDropDownMenu_SetWidth(learnedDropdown, 70)
-    UIDropDownMenu_Initialize(learnedDropdown, function(self, level)
-        for basicOptions in pairs(LF.basicOptions) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = basicOptions
-            info.func = function()
-                -- When clicked, save selection and update dropdown text
-                learnedDropdown.selectedLearned = basicOptions
-                UIDropDownMenu_SetText(learnedDropdown, basicOptions)
-                
-                -- Here update the rule's action to this selection
-                if LF.GetSelectedRule() then
-                    LF.GetSelectedRule().learned = basicOptions
-                    LF.RefreshFilterWindowRuleList()
-                end
-            end
-            info.checked = (learnedDropdown.selectedLearned == basicOptions)
-            UIDropDownMenu_AddButton(info, level)
+    return LF.CreateDropdown({
+        labelText = "Learned:",
+        labelX = -210,
+        labelY = -360,
+        width = 50,
+        optionsTable = LF.basicOptions,
+        getText = function(key) return key end,
+        onSelect = function(rule, selectedKey)
+            rule.learned = selectedKey
         end
-    end)
-    return learnedDropdown
+    })
 end
 
-
 local function createActionSelect()
-    local nameText = RuleWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    nameText:SetPoint("TOPRIGHT", RuleWindow, "TOPRIGHT", -140, -40)
-    nameText:SetText("Outcome:")
-    nameText:SetTextColor(unpack(LF.Colors.Text))
-    local actionDropdown = CreateFrame("Frame", "LFActionDropdown", RuleWindow, "UIDropDownMenuTemplate")
-    actionDropdown:SetPoint("LEFT", nameText, "RIGHT", -10, 0)
-    UIDropDownMenu_SetWidth(actionDropdown, 100)
-    UIDropDownMenu_Initialize(actionDropdown, function(self, level)
-        for actionName, iconPath in pairs(LF.actions) do
-            local info = UIDropDownMenu_CreateInfo()
-            info.text = actionName
-            info.func = function()
-                -- When clicked, save selection and update dropdown text
-                actionDropdown.selectedAction = actionName
-                UIDropDownMenu_SetText(actionDropdown, actionName.." |T" .. LF.actions[actionName].icon ..":14:14:0:0|t")
-                
-                -- Here update the rule's action to this selection
-                if LF.GetSelectedRule() then
-                    LF.GetSelectedRule().action = actionName
-                    LF.RefreshFilterWindowRuleList()
-                end
-            end
-            info.checked = (actionDropdown.selectedAction == actionName)
-            info.icon = LF.actions[actionName].icon
-            UIDropDownMenu_AddButton(info, level)
+    return LF.CreateDropdown({
+        labelText = "Outcome:",
+        labelX = -140,
+        labelY = -40,
+        width = 100,
+        optionsTable = LF.actions,
+        getText = function(key, val)
+            return  "|T" .. val.icon .. ":14:14:0:0|t "..key
+        end,
+        onSelect = function(rule, selectedKey)
+            rule.action = selectedKey
         end
-    end)
-    return actionDropdown
+    })
 end
 
 local function createItemList()
@@ -280,11 +273,15 @@ local function createItemList()
     inputBox:SetAutoFocus(false)
     inputBox:SetFontObject("GameFontHighlightSmall")
     -- Allow shift-clicking item links into the box
-    ChatEdit_InsertLink = function(link)
+    local Original_ChatEdit_InsertLink = ChatEdit_InsertLink
+    -- Override with custom behavior
+    function ChatEdit_InsertLink(link)
         if inputBox:HasFocus() then
             inputBox:Insert(link)
             return true
         end
+        -- Fallback to original behavior
+        return Original_ChatEdit_InsertLink(link)
     end
     -- Handle pressing Enter
     inputBox:SetScript("OnEnterPressed", function(self)
@@ -412,6 +409,7 @@ function LF.createRuleWindow()
     RuleWindow.actionSelect = createActionSelect()
     RuleWindow.learnedSelect = createLearnedSelect()
     RuleWindow.alertSelect = createAlertSelect()
+    RuleWindow.soulboundSelect = createSoulboundSelect()
     RuleWindow.modeSelect = createModeSelect()
     RuleWindow.itemList = createItemList()
     RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -80, "goldValueMin", "goldValueMax", "GoldValue")
@@ -446,19 +444,23 @@ function LF.showRuleWindow()
     end
     LF.refreshClassSelect()
 
-    RuleWindow.actionSelect.selectedAction = rule.action
-    UIDropDownMenu_SetText(RuleWindow.actionSelect, rule.action.." |T" .. LF.actions[rule.action].icon ..":16:16:0:0|t")
+    RuleWindow.actionSelect.selectedValue = rule.action
+    UIDropDownMenu_SetText(RuleWindow.actionSelect, "|T" .. LF.actions[rule.action].icon ..":14:14:0:0|t "..rule.action)
     UIDropDownMenu_Refresh(RuleWindow.actionSelect)
 
-    RuleWindow.learnedSelect.selectedLearned = rule.learned
+    RuleWindow.learnedSelect.selectedValue = rule.learned
     UIDropDownMenu_SetText(RuleWindow.learnedSelect, rule.learned)
     UIDropDownMenu_Refresh(RuleWindow.learnedSelect)
 
-    RuleWindow.alertSelect.selectedAlert = rule.alert
+    RuleWindow.alertSelect.selectedValue = rule.alert
     UIDropDownMenu_SetText(RuleWindow.alertSelect, rule.alert)
     UIDropDownMenu_Refresh(RuleWindow.alertSelect)
 
-    RuleWindow.modeSelect.selectedMode = rule.mode
+    RuleWindow.soulboundSelect.selectedValue = rule.soulbound
+    UIDropDownMenu_SetText(RuleWindow.soulboundSelect, rule.soulbound)
+    UIDropDownMenu_Refresh(RuleWindow.soulboundSelect)
+
+    RuleWindow.modeSelect.selectedValue = rule.mode
     UIDropDownMenu_SetText(RuleWindow.modeSelect, LF.modes[rule.mode])
     UIDropDownMenu_Refresh(RuleWindow.modeSelect)
 

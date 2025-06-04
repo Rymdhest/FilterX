@@ -243,8 +243,33 @@ function LF.RefreshFilterWindowRuleList()
         local deleteButton = CreateFrame("Button", nil, entry, "UIPanelButtonTemplate")
         deleteButton:SetSize(38, 19)
         deleteButton:SetText("Delete")
-        deleteButton:SetPoint("RIGHT", entry, "RIGHT", 0, 0)
+        deleteButton:SetPoint("RIGHT", entry, "RIGHT", 0, 10)
         deleteButton.ruleName = rule.name
         deleteButton:SetScript("OnClick", OnDeleteRuleClicked)
+
+        -- Enabled Checkbox
+        local enabledBox = CreateFrame("CheckButton", nil, entry, "UICheckButtonTemplate")
+        enabledBox:SetPoint("RIGHT", entry, "RIGHT", 0, -10)
+        enabledBox:SetChecked(rule.isEnabled)
+        enabledBox:SetScript("OnClick", function(self)
+            local checked = self:GetChecked()
+            if checked then
+                rule.isEnabled = true
+                LF.RefreshFilterWindowRuleList()
+            else
+                rule.isEnabled = false
+                LF.RefreshFilterWindowRuleList()
+            end
+        end)
+
+        if not rule.isEnabled then
+            icon:SetDesaturated(true)
+            name:SetAlpha(0.25)
+            desc:SetAlpha(0.2)
+            icon:SetAlpha(0.5)
+        else
+
+        end
+
     end
 end

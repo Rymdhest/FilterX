@@ -66,16 +66,24 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
-function LF.IsItemAlreadyKnown(itemLink)
-    -- Create a hidden tooltip to scan
-    local tooltip = CreateFrame("GameTooltip", "ScanTooltip", nil, "GameTooltipTemplate")
-    tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+-- Create once at addon load time
+if not LF.ScanTooltip then
+    LF.ScanTooltip = CreateFrame("GameTooltip", "LFScanTooltip", UIParent, "GameTooltipTemplate")
+    LF.ScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+end
+
+function LF.searchTooltipForString(itemLink, searchString)
+    local tooltip = LF.ScanTooltip
+    tooltip:ClearLines()
     tooltip:SetHyperlink(itemLink.link)
 
     for i = 1, tooltip:NumLines() do
-        local text = _G["ScanTooltipTextLeft" .. i]:GetText()
-        if text and text:lower():find("already known") then
-            return true
+        local text = _G["LFScanTooltipTextLeft" .. i] and _G["LFScanTooltipTextLeft" .. i]:GetText()
+        if text then
+            -- print("Line", i, ":", text)
+            if text:lower():find(searchString:lower(), 1, true) then
+                return true
+            end
         end
     end
 
@@ -184,17 +192,23 @@ local function checkConditionForRuleAndItem(rule, item)
     if numClasses > 0 then
         if not rule.classes[item.class] then return false end
         if not rule.classes[item.class][item.subClass] then return false end
-    end
+    end 
 
 
     ------------------ LEARNED ------------------------
-    if rule.learned == "Yes" then
-       if not LF.IsItemAlreadyKnown(item) then return false end
-    end
-    if rule.learned == "No" then
-       if LF.IsItemAlreadyKnown(item) then return false end
-    end
+    local isKnown = LF.searchTooltipForString(item, "already known.")
+    if rule.learned == "Yes" and not isKnown then return false end
+    if rule.learned == "No" and isKnown then return false end
 
+    
+        ------------------ BINDS ------------------------
+    if rule.soulbound ~= "Any" then
+        local bindOnPickup = LF.searchTooltipForString(item, ITEM_BIND_ON_PICKUP)
+        local bindOnEquip = LF.searchTooltipForString(item, ITEM_BIND_ON_EQUIP )
+        if rule.soulbound == "when picked up" and not bindOnPickup then return false end
+        if rule.soulbound == "when equipped" and not bindOnEquip then return false end
+        if rule.soulbound == "never bound" and (bindOnEquip or bindOnPickup) then return false end
+    end
 
     return true
 end
@@ -212,27 +226,32 @@ function RuleMatchesItem(rule, item)
 end
 
 function LF.EvaluateActionForItemIDAgainstRules(itemID)
-    local bestAction = "Nothing"
-    local bestAlert = "Nothing"
-    local bestPriority = LF.actions[bestAction].priority
+    local action = "Nothing"
+    local alert = "Nothing"
+    local bestActionPriority = LF.actions[action].priority
+    local bestAlertPriority = LF.alerts[alert].priority
     if LF.GetSelectedFilter() == nil then
-        return bestAction
+        return action
     end
 
     local item = LF.GetItemInfoObject(itemID)
     if not item then return end
     for _, rule in ipairs(LF.GetSelectedFilter().rules) do
         if rule.isEnabled and RuleMatchesItem(rule, item) then
-            local rulePriority = LF.actions[rule.action].priority
-            if rulePriority < bestPriority then
-                bestAction = rule.action
-                bestPriority = rulePriority
-                bestAlert = rule.alert
+            local ruleActionPriority = LF.actions[rule.action].priority
+            if ruleActionPriority < bestActionPriority then
+                action = rule.action
+                bestActionPriority = ruleActionPriority
+            end
+            local ruleAlertPriority = LF.alerts[rule.alert].priority
+            if ruleAlertPriority < bestAlertPriority then
+                alert = rule.alert
+                bestAlertPriority = ruleAlertPriority
             end
         end
     end
 
-    return bestAction, bestAlert
+    return action, alert
 end
 
 local function deleteItemBagSlot(bag, slot, link)
@@ -278,19 +297,15 @@ function LF.FindNextDisenchantableItem()
     return nil -- no item found
 end
 
-function LF.PerformSellInventory()
-  local currPrice
+function LF.PerformSellInventory(startBag, startSlot, startEarned, totalSoldStart)
+    local currPrice
+    local earned = startEarned or 0
     isAutoing = true
     local numItemsAffect = 0
+    local totalSoldCount = totalSoldStart or 0
 
-    for bag = -2,NUM_BAG_SLOTS do
-        if numItemsAffect > MAX_AT_ONCE then 
-            C_Timer.After(1.0, function()
-                LF.PerformSellInventory()
-            end)
-            return
-        end
-        for slot = 1, GetContainerNumSlots(bag) do
+    for bag = startBag or -2,NUM_BAG_SLOTS do
+        for slot = startSlot or 1, GetContainerNumSlots(bag) do
         local link = GetContainerItemLink(bag,slot)
         if link then
             local itemID = tonumber(link:match("item:(%d+)"))
@@ -302,6 +317,8 @@ function LF.PerformSellInventory()
                     PickupMerchantItem()
                     print("Sold".." "..link)
                     numItemsAffect = numItemsAffect +1
+                    earned = earned+currPrice
+                    totalSoldCount = totalSoldCount+1
                 end
                 elseif action == "Delete" then 
                     deleteItemBagSlot(bag, slot, link)
@@ -310,9 +327,24 @@ function LF.PerformSellInventory()
             end
         end
     end
+    if numItemsAffect > MAX_AT_ONCE then 
+            C_Timer.After(1.0, function()
+                LF.PerformSellInventory(bag, slot, earned, totalSoldCount)
+            end)
+            return
+        end
     C_Timer.After(1, function()
         isAutoing = false
     end)
+
+
+    local amount = GetMoneyString(earned, true);
+    if earned > 0 then
+        if totalSoldCount == 1 then print ("Sold "..totalSoldCount.." item worth: "..amount)
+        else print ("Sold "..totalSoldCount.." items worth: "..amount) end
+
+        LF.AddAlert(amount, false, LF.ItemRaritiesByName["Artifact"].id, false, false, "test", "moneytoast", false, false, false, earned)
+    end
 end
 -- Function to track sold items based on locked items
 local function DetectSoldItem()

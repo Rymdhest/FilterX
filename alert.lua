@@ -26,7 +26,7 @@ local HONOR_BACKGROUND_TCOORDS = {
 };
 local SUB_COORDS = HONOR_BACKGROUND_TCOORDS[playerFaction];
 local HONOR_BADGE = {SUB_COORDS[3], SUB_COORDS[4], SUB_COORDS[5], SUB_COORDS[6]};
-YOU_RECEIVED_LABEL = "You Recieve"
+YOU_RECEIVED_LABEL = "You Recieved"
 local LE_ITEM_QUALITY_COMMON = 1;
 local LE_ITEM_QUALITY_EPIC = 4;
 local LE_ITEM_QUALITY_HEIRLOOM = 7;
@@ -273,8 +273,6 @@ function LootAlertButtonTemplate_OnShow(self)
         
         if LOOT_BORDER_BY_QUALITY[data.quality] then
 			self.IconBorder:SetTexCoord(unpack(LOOT_BORDER_BY_QUALITY[data.quality]));
-		else 
-			--self.IconBorder:SetTexCoord(0.994082, 0.99397461, 0.99953125, 0.999644531);
         end
 		
 		if sound then

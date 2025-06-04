@@ -20,11 +20,11 @@ LF.actions = {
 }
 
 LF.alerts = {
-    ["Nothing"]= {toast = ""},
-    ["Small"]  = {toast = "commontoast"},
-    ["Medium"] = {toast = "defaulttoast"},
-    ["Large"]  = {toast = "heroictoast"},
-    ["Huge"]   = {toast = "legendarytoast"},
+    ["Nothing"]= {toast = "", priority = 5},
+    ["Small"]  = {toast = "commontoast", priority = 4},
+    ["Medium"] = {toast = "defaulttoast", priority = 3},
+    ["Large"]  = {toast = "heroictoast", priority = 2},
+    ["Huge"]   = {toast = "legendarytoast", priority = 1},
 }
 
 LF.modes = {
@@ -36,6 +36,13 @@ LF.basicOptions = {
     ["Any"] = {ID = 1},
     ["Yes"]       = {ID = 2},
     ["No"]    = {ID = 3},
+}
+
+LF.bindingOptions = {
+    ["Any"] = {ID = 1},
+    ["never bound"]       = {ID = 2},
+    ["when picked up"]    = {ID = 3},
+    ["when equipped"]    = {ID = 4},
 }
 
 LF.ItemRarities = {

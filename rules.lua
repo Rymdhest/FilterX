@@ -75,6 +75,7 @@ function LF.createNewRule()
       },
       classes = {},
       learned = "Any",
+      soulbound = "Any",
       alert = "Nothing",
       action = "Sell",      -- keep, delete, disenchant, sell, nothing
   }
