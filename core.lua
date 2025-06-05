@@ -12,9 +12,11 @@ eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
 eventFrame:RegisterEvent("ITEM_PUSH")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 eventFrame:RegisterEvent("LOOT_OPENED")
+eventFrame:RegisterEvent("LOOT_CLOSED")
 eventFrame:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
 eventFrame:RegisterEvent("CHAT_MSG_LOOT")
+eventFrame:RegisterEvent("CHAT_MSG_SYSTEM")
 
 eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
@@ -23,8 +25,9 @@ eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
 
 
 local lastSoldItem = nil
-SLASH_LOOTFILTER1 = "/LF"
+SLASH_LOOTFILTER1 = "/FX"
 SLASH_LOOTFILTER2 = "/LootFilter"
+SLASH_LOOTFILTER2 = "/FilterX"
 local MAX_AT_ONCE = 80
 local isAutoing = false
 
@@ -33,7 +36,7 @@ local UseContainerItemTime = 0
 local startDisenchantTime = 0
 local suceedDisenchantTime = 0
 
-local lastAtoDisenchantClickTime = 0
+local updateDisenchantOnLootClose = false
 
 
 SlashCmdList["LOOTFILTER"] = function(msg)
@@ -50,11 +53,12 @@ local function AddToTooltip(tooltip)
     local itemID = tonumber(link:match("item:(%d+)"))
     if not itemID then return end
 
-    local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
-    if action then
+    local action, alert, rules = LF.EvaluateActionForItemIDAgainstRules(itemID)
+    if action and #rules > 0 then
         local actionText = "|cff00ff00["..action.."]|r"
         local actionicon = " |T" .. LF.actions[action].icon .. ":16:16:0:0|t"
-        tooltip:AddLine(actionicon .. actionText)
+        local rulesText = " ("..table.concat(rules, ", ")..")"
+        tooltip:AddLine(actionicon .. actionText..rulesText)
         tooltip.__LF_CustomLineAdded = true
         tooltip:Show()
     end
@@ -66,28 +70,51 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
     end
 end)
 
--- Create once at addon load time
-if not LF.ScanTooltip then
-    LF.ScanTooltip = CreateFrame("GameTooltip", "LFScanTooltip", UIParent, "GameTooltipTemplate")
-    LF.ScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+
+
+-- One-time creation function
+local function CreateScanTooltip()
+    local tooltip = CreateFrame("GameTooltip", "LFScanTooltip", UIParent, "GameTooltipTemplate")
+    tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+    LF.ScanTooltip = tooltip
 end
 
-function LF.searchTooltipForString(itemLink, searchString)
-    local tooltip = LF.ScanTooltip
-    tooltip:ClearLines()
-    tooltip:SetHyperlink(itemLink.link)
+-- Call once at addon load
+if not LF.ScanTooltip then
+    CreateScanTooltip()
+end
 
-    for i = 1, tooltip:NumLines() do
-        local text = _G["LFScanTooltipTextLeft" .. i] and _G["LFScanTooltipTextLeft" .. i]:GetText()
-        if text then
-            -- print("Line", i, ":", text)
-            if text:lower():find(searchString:lower(), 1, true) then
+-- Self-healing tooltip search
+function LF.searchTooltipForString(itemLink, searchString)
+    local function scan(tooltip)
+        tooltip:ClearLines()
+        tooltip:SetHyperlink(itemLink.link or itemLink)
+
+        if tooltip:NumLines() == 0 then
+            return false, "tooltip_empty"
+        end
+
+        for i = 1, tooltip:NumLines() do
+            local textObj = _G["LFScanTooltipTextLeft" .. i]
+            local text = textObj and textObj:GetText()
+            if text and text:lower():find(searchString:lower(), 1, true) then
                 return true
             end
         end
+
+        return false
     end
 
-    return false
+    -- Try once
+    local result, err = scan(LF.ScanTooltip)
+
+    -- If tooltip is broken (e.g., after AFK), rebuild and retry once
+    if err == "tooltip_empty" then
+        CreateScanTooltip()
+        result = scan(LF.ScanTooltip)
+    end
+
+    return result or false
 end
 
 local function removeItemAutoSell(itemLink)
@@ -108,10 +135,12 @@ function LF:ADDON_LOADED(addonName)
 
         LF.isAutoDisenchanting = false
 
+        LF.lastAtoDisenchantClickTime = 0
+
         eventFrame:UnregisterEvent("ADDON_LOADED")
 
         LF.InitializeItemClassLookup()
-        LF.showMainWindow()
+        --LF.showMainWindow()
         GameTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
         ItemRefTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
         GameTooltip:HookScript("OnTooltipCleared", function(self)
@@ -154,23 +183,36 @@ local function checkConditionForRuleAndItem(rule, item)
         local empty = true
         for word, _ in pairs(rule.words) do
             empty = false
-            local pattern = "%f[%w]" .. word:lower() .. "%f[%W]"
-            if string.find(item.name:lower(), pattern) then
+
+            -- Escape special characters in the word (like ":" or "-")
+            local escapedWord = word:lower():gsub("([^%w])", "%%%1")
+
+            -- Create pattern that matches the word as a whole (surrounded by non-word characters or boundaries)
+            local pattern = "([^%w])" .. escapedWord .. "([^%w])"
+
+            -- Pad the item name to simulate word boundaries at start/end
+            local paddedName = " " .. item.name:lower() .. " "
+
+            if paddedName:find(pattern) then
                 found = true
+                break -- optional: stop checking once a match is found
             end
         end
-        if not found and not empty then return false end
+        if not found and not empty then
+            return false
+        end
     end
 
 
 
     ------------------ MIN-MAX ------------------------
+    local toGold = 100*100
     if rule.itemLevelMin and item.level < rule.itemLevelMin then return false end
     if rule.itemLevelMax and item.level > rule.itemLevelMax then return false end
     if rule.levelRequirementMin and item.requiredLevel < rule.levelRequirementMin then return false end
     if rule.levelRequirementMax and item.requiredLevel > rule.levelRequirementMax then return false end
-    if rule.goldValueMin and item.sellPrice < rule.goldValueMin then return false end
-    if rule.goldValueMax and item.sellPrice > rule.goldValueMax then return false end
+    if rule.goldValueMin and item.sellPrice < rule.goldValueMin*toGold then return false end
+    if rule.goldValueMax and item.sellPrice > rule.goldValueMax*toGold then return false end
     --if rule.countMin and item.count < rule.countMin then return false end
     --if rule.countMax and item.count > rule.countMax then return false end
 
@@ -198,7 +240,7 @@ local function checkConditionForRuleAndItem(rule, item)
 
 
     ------------------ LEARNED ------------------------
-    local isKnown = LF.searchTooltipForString(item, "already known.")
+    local isKnown = LF.searchTooltipForString(item, "already known")
     if rule.learned == "Yes" and not isKnown then return false end
     if rule.learned == "No" and isKnown then return false end
 
@@ -206,10 +248,8 @@ local function checkConditionForRuleAndItem(rule, item)
         ------------------ BINDS ------------------------
     if rule.soulbound ~= "Any" then
         local bindOnPickup = LF.searchTooltipForString(item, ITEM_BIND_ON_PICKUP)
-        local bindOnEquip = LF.searchTooltipForString(item, ITEM_BIND_ON_EQUIP )
-        if rule.soulbound == "when picked up" and not bindOnPickup then return false end
-        if rule.soulbound == "when equipped" and not bindOnEquip then return false end
-        if rule.soulbound == "never bound" and (bindOnEquip or bindOnPickup) then return false end
+        if rule.soulbound == "Yes" and not bindOnPickup then return false end
+        if rule.soulbound == "No" and bindOnPickup then return false end
     end
 
     return true
@@ -230,20 +270,24 @@ end
 function LF.EvaluateActionForItemIDAgainstRules(itemID)
     local action = "Nothing"
     local alert = "Nothing"
+    local rulesMatch = {}
     local bestActionPriority = LF.actions[action].priority
     local bestAlertPriority = LF.alerts[alert].priority
     if LF.GetSelectedFilter() == nil then
-        return action
+        return action, alert, rulesMatch
     end
 
+
     local item = LF.GetItemInfoObject(itemID)
-    if not item then return end
+    if not item then return action, alert, rulesMatch end
     for _, rule in ipairs(LF.GetSelectedFilter().rules) do
         if rule.isEnabled and RuleMatchesItem(rule, item) then
             local ruleActionPriority = LF.actions[rule.action].priority
-            if ruleActionPriority < bestActionPriority then
+            if ruleActionPriority <= bestActionPriority then
+                if ruleActionPriority < bestActionPriority then table.wipe(rulesMatch) end
                 action = rule.action
                 bestActionPriority = ruleActionPriority
+                table.insert(rulesMatch, rule.name)
             end
             local ruleAlertPriority = LF.alerts[rule.alert].priority
             if ruleAlertPriority < bestAlertPriority then
@@ -252,8 +296,7 @@ function LF.EvaluateActionForItemIDAgainstRules(itemID)
             end
         end
     end
-
-    return action, alert
+    return action, alert, rulesMatch
 end
 
 local function deleteItemBagSlot(bag, slot, link)
@@ -275,7 +318,7 @@ end
 
 function LF.FindNextDisenchantableItem()
     local found = 0
-    local bag1, slot1
+    local bag1, slot1, bag2, slot2
     for bag = 0, NUM_BAG_SLOTS do
         for slot = 1, GetContainerNumSlots(bag) do
             local link = GetContainerItemLink(bag, slot)
@@ -284,19 +327,24 @@ function LF.FindNextDisenchantableItem()
                 local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
                 if (action == "Disenchant") then
                     found = found+1
-                    if found < 2 then
+                    if found == 1 then
                         bag1 = bag
                         slot1 = slot
                     end
-                    if found >= 2 then 
-                        return bag1, slot1, bag, slot end
+                    if found == 2 then 
+                        bag2 = bag
+                        slot2 = slot
+                    end
                 end
             end
         end
     end                 
-    if found >= 1 then 
-    return bag1, slot1, bag1, slot1 end
-    return nil -- no item found
+    if found == 0 then return nil, nil, nil, nil, found end
+    if found == 1 then
+        bag2 = bag1
+        slot2 = slot1
+    end
+    return bag1, slot1, bag2, slot2, found
 end
 
 function LF.PerformSellInventory(startBag, startSlot, startEarned, totalSoldStart)
@@ -307,21 +355,28 @@ function LF.PerformSellInventory(startBag, startSlot, startEarned, totalSoldStar
     local totalSoldCount = totalSoldStart or 0
 
     for bag = startBag or -2,NUM_BAG_SLOTS do
-        for slot = startSlot or 1, GetContainerNumSlots(bag) do
-        local link = GetContainerItemLink(bag,slot)
-        if link then
-            local itemID = tonumber(link:match("item:(%d+)"))
-            local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
-            if action == "Sell" then
-                currPrice = select(11, LF.GetItemInfo(link)) * select(2, GetContainerItemInfo(bag, slot))
-                if currPrice > 0 then
-                    PickupContainerItem(bag, slot)
-                    PickupMerchantItem()
-                    print("Sold".." "..link)
-                    numItemsAffect = numItemsAffect +1
-                    earned = earned+currPrice
-                    totalSoldCount = totalSoldCount+1
-                end
+        local firstSlot = (bag == startBag and startSlot) or 1
+        for slot = firstSlot, GetContainerNumSlots(bag) do
+            if numItemsAffect > MAX_AT_ONCE then 
+                C_Timer.After(1.0, function()
+                    LF.PerformSellInventory(bag, slot, earned, totalSoldCount)
+                end)
+                return
+            end
+            local link = GetContainerItemLink(bag,slot)
+            if link then
+                local itemID = tonumber(link:match("item:(%d+)"))
+                local action = LF.EvaluateActionForItemIDAgainstRules(itemID)
+                if action == "Sell" then
+                    currPrice = select(11, LF.GetItemInfo(link)) * select(2, GetContainerItemInfo(bag, slot))
+                    if currPrice > 0 then
+                        PickupContainerItem(bag, slot)
+                        PickupMerchantItem()
+                        --print("Sold".." "..link)
+                        numItemsAffect = numItemsAffect +1
+                        earned = earned+currPrice
+                        totalSoldCount = totalSoldCount+1
+                    end
                 elseif action == "Delete" then 
                     deleteItemBagSlot(bag, slot, link)
                     numItemsAffect = numItemsAffect +1
@@ -329,17 +384,10 @@ function LF.PerformSellInventory(startBag, startSlot, startEarned, totalSoldStar
             end
         end
     end
-    if numItemsAffect > MAX_AT_ONCE then 
-            C_Timer.After(1.0, function()
-                LF.PerformSellInventory(bag, slot, earned, totalSoldCount)
-            end)
-            return
-        end
+
     C_Timer.After(1, function()
         isAutoing = false
     end)
-
-
     local amount = GetMoneyString(earned, true);
     if earned > 0 then
         if totalSoldCount == 1 then print ("Sold "..totalSoldCount.." item worth: "..amount)
@@ -372,7 +420,7 @@ local function addItemAutoSell(lastSoldItem)
         rule.name = "Auto Add From Vendoring"
         rule.mode = "Items"
         rule.action = "Sell"
-        rule.locked = false
+        rule.locked = true
     end
     if LF.AddItemIDToRule(rule, tonumber(lastSoldItem:match("item:(%d+)"))) then
         print("Added "..lastSoldItem.." to auto sell")
@@ -388,7 +436,7 @@ local function addItemAutoDisenchant(item)
         rule.name = "Auto Add From Disenchanting"
         rule.mode = "Items"
         rule.action = "Disenchant"
-        rule.locked = false
+        rule.locked = true
     end
     if LF.AddItemIDToRule(rule, tonumber(item:match("item:(%d+)"))) then
         print("Added "..item.." to auto Disenchant")
@@ -407,7 +455,7 @@ function LF:MERCHANT_SHOW()
 end
 
 function LF:MERCHANT_UPDATE()
-    if not LF.GetSelectedFilter().isAutoAddWhenVendoring then return end
+    if not (LF.GetSelectedFilter() and LF.GetSelectedFilter().isAutoAddWhenVendoring) then return end
     if lastSoldItem then
         addItemAutoSell(lastSoldItem)
         lastSoldItem = nil -- Reset after processing sale
@@ -436,16 +484,31 @@ function LF:UNIT_SPELLCAST_SUCCEEDED(unit, spellName, type, lineID)
 end
 
 function LF:LOOT_OPENED(autoLoot)
-        local time = GetTime()
-        if time - suceedDisenchantTime < 1 and pendingDisenchantItem then
-            if time - LF.lastAtoDisenchantClickTime > 4 then
+    local time = GetTime()
+    if time - suceedDisenchantTime < 1 and pendingDisenchantItem then
+        updateDisenchantOnLootClose = true
+        if time - LF.lastAtoDisenchantClickTime > 4 then
+            if (LF.GetSelectedFilter() and LF.GetSelectedFilter().isAutoAddWhenDisenchanting) then  
                 addItemAutoDisenchant(pendingDisenchantItem)
             end
         end
-        pendingDisenchantItem = nil
+    end
+    pendingDisenchantItem = nil
 end
 
-
+function LF:LOOT_CLOSED()
+    if updateDisenchantOnLootClose then
+        C_Timer.After(0.1, function()
+            local _, _, bag2, slot2, count = LF.FindNextDisenchantableItem()
+            local link
+            if bag2 and slot2 then link = GetContainerItemLink(bag2, slot2) end
+                LF.disenchantWindow.count = count
+                LF.updateNextDisenchantitem(link)
+        end)
+    end
+    pendingDisenchantItem = nil
+    updateDisenchantOnLootClose = false
+end
 
 function LF:UNIT_SPELLCAST_START(unit)
     if unit == "player" and UnitCastingInfo("player") == GetSpellInfo(13262) then
@@ -480,16 +543,27 @@ function LF:UNIT_SPELLCAST_FAILED_QUIET()
     LF.lastAtoDisenchantClickTime = 0
 end
 
+local trackLootTypes = {
+    item = true,   -- "You receive item:"
+    loot = true,   -- "You receive loot:"
+    create = true, -- "You create:"
+}
 
 function LF:CHAT_MSG_LOOT(msg)
-    local itemLink, count = msg:match("You receive item: (.+)x(%d+)%.")
+    local itemLink, count
+    if msg:find("You receive item:") and trackLootTypes.item then
+        itemLink, count = msg:match("You receive item: (.+)x(%d+)%.")
+        if not itemLink then itemLink = msg:match("You receive item: (.+)%.") end
 
-    if not itemLink then
-        itemLink = msg:match("You receive item: (.+)%.")
-        count = 1
-    else
-        count = tonumber(count)
+    elseif msg:find("You receive loot:") and trackLootTypes.loot then
+        itemLink, count = msg:match("You receive loot: (.+)x(%d+)%.")
+        if not itemLink then itemLink = msg:match("You receive loot: (.+)%.") end
+
+    elseif msg:find("You create:") and trackLootTypes.create then
+        itemLink, count = msg:match("You create: (.+)x(%d+)%.")
+        if not itemLink then itemLink = msg:match("You create: (.+)%.") end
     end
+
     if itemLink then
         local itemID = tonumber(itemLink:match("item:(%d+):"))
         local item = LF.GetItemInfoObject(itemID)
@@ -499,6 +573,18 @@ function LF:CHAT_MSG_LOOT(msg)
             C_Timer.After(0.1, function()
                 deleteItemByLink(itemLink) 
             end)
+        end
+        if action == "Disenchant" then
+            C_Timer.After(0.1, function()
+                local _, _, bag2, slot2, count = LF.FindNextDisenchantableItem()
+                if (bag2 and slot2) then
+                    local link = GetContainerItemLink(bag2, slot2)
+                    LF.disenchantWindow.count = count
+                    LF.updateNextDisenchantitem(link)
+                end
+
+            end)
+
         end
         if alert ~= "Nothing" then LF.AddAlert(item.name, item.link, item.quality, item.icon, count, true, LF.alerts[alert].toast, false, false, false, false) end
     end

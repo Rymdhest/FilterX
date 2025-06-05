@@ -174,9 +174,9 @@ end
 local function createModeSelect()
     return LF.CreateDropdown({
         labelText = "Mode:",
-        labelX = -320,
+        labelX = -308,
         labelY = -40,
-        width = 100,
+        width = 80,
         optionsTable = LF.modes,
         getText = function(key, value) return value end,
         onSelect = function(rule, selectedKey)
@@ -188,11 +188,11 @@ end
 
 local function createSoulboundSelect()
     return LF.CreateDropdown({
-        labelText = "Binds:",
+        labelText = "BoP:",
         labelX = -210,
         labelY = -330,
-        width = 80,
-        optionsTable = LF.bindingOptions,
+        width = 50,
+        optionsTable = LF.basicOptions,
         getText = function(key) return key end,
         onSelect = function(rule, selectedKey)
             rule.soulbound = selectedKey
@@ -249,6 +249,12 @@ local function createWordList()
     local wordListFrame = CreateFrame("Frame", "wordListFrame", RuleWindow)
     wordListFrame:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 235, -160)
     wordListFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -145, 170)
+
+
+    local label = wordListFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("BOTTOM", wordListFrame, "TOP", 0, 3)
+    label:SetText("Contains Words:")
+    label:SetTextColor(unpack(LF.Colors.Text))
 
     -- Add a scrollbar
     local scrollFrame = CreateFrame("ScrollFrame", "ruleWordScrollFrame", wordListFrame, "UIPanelScrollFrameTemplate")

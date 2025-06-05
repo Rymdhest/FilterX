@@ -51,7 +51,7 @@ function LF.createNewRule()
     local rule = {
       name = uniqueName,
       isEnabled = true,
-      locked = true,
+      locked = false,
       itemIDs = {},
       words = {},
       mode = "Items",
@@ -113,111 +113,160 @@ function LF.describeRule(rule)
             itemstring = itemstring.." |T" .. icon ..":13:13:0:0|t"..name
             count2 = count2+1
         end
-
         table.insert(parts, itemstring)
-        return table.concat(parts, "|")
-    end
+        
+        if count == 0 then
+            table.insert(parts, "NOTHING")
+        end
 
-    local moreThanSuffix = " or more"
-    local lessThanSuffix = " or less"
+    else 
+        local moreThanSuffix = " or more"
+        local lessThanSuffix = " or less"
 
+        -- Gold Value range
+        if rule.goldValueMin and rule.goldValueMax then
+            local min = rule.goldValueMin
+            local max = rule.goldValueMax
+            table.insert(parts, "Value: " .. min .. "-" .. max .. " Gold")
+        elseif rule.goldValueMin then
+            local min = rule.goldValueMin
+            table.insert(parts, "Value: " .. min .. moreThanSuffix .. " Gold")
+        elseif rule.goldValueMax then
+            local max = rule.goldValueMax
+            table.insert(parts, "Value: " .. max .. lessThanSuffix .. " Gold")
+        end
 
-    -- Regex or itemIDs
-    if rule.isUseIDs and #rule.itemIDs > 0 then
-        table.insert(parts, "IDs: " .. table.concat(rule.itemIDs, ", "))
-    elseif rule.regex ~= "" then
-        table.insert(parts, "Name match: \"" .. rule.regex .. "\"")
-    end
+        -- Item level range
+        if rule.itemLevelMin and rule.itemLevelMax then
+            local min = rule.itemLevelMin
+            local max = rule.itemLevelMax
+            table.insert(parts, "Item Level: " .. min .. "-" .. max)
+        elseif rule.itemLevelMin then
+            local min = rule.itemLevelMin
+            table.insert(parts, "Item Level: " .. min .. moreThanSuffix)
+        elseif rule.itemLevelMax then
+            local max = rule.itemLevelMax
+            table.insert(parts, "Item Level: " .. max .. lessThanSuffix)
+        end
 
-    -- Gold Value range
-    if rule.goldValueMin and rule.goldValueMax then
-        local min = rule.goldValueMin
-        local max = rule.goldValueMax
-        table.insert(parts, "Value: " .. min .. "-" .. max .. " Gold")
-    elseif rule.goldValueMin then
-        local min = rule.goldValueMin
-        table.insert(parts, "Value: " .. min .. moreThanSuffix .. " Gold")
-    elseif rule.goldValueMax then
-        local max = rule.goldValueMax
-        table.insert(parts, "Value: " .. max .. lessThanSuffix .. " Gold")
-     end
+        -- Level requirement range
+        if rule.levelRequirementMin and rule.levelRequirementMax then
+            local min = rule.levelRequirementMin
+            local max = rule.levelRequirementMax
+            table.insert(parts, "Level Req: " .. min .. "-" .. max)
+        elseif rule.levelRequirementMin then
+            local min = rule.levelRequirementMin
+            table.insert(parts, "Level Req: " .. min .. moreThanSuffix)
+        elseif rule.levelRequirementMax then
+            local max = rule.levelRequirementMax
+            table.insert(parts, "Level Req: " .. max .. lessThanSuffix)
+        end
 
-    -- Item level range
-    if rule.itemLevelMin and rule.itemLevelMax then
-        local min = rule.itemLevelMin
-        local max = rule.itemLevelMax
-        table.insert(parts, "Item Level: " .. min .. "-" .. max)
-    elseif rule.itemLevelMin then
-        local min = rule.itemLevelMin
-        table.insert(parts, "Item Level: " .. min .. moreThanSuffix)
-    elseif rule.itemLevelMax then
-        local max = rule.itemLevelMax
-        table.insert(parts, "Item Level: " .. max .. lessThanSuffix)
-     end
+            -- count range
+        if rule.countMin and rule.countMax then
+            local min = rule.countMin
+            local max = rule.countMax
+            table.insert(parts, "item Count: " .. min .. "-" .. max)
+        elseif rule.countMin then
+            local min = rule.countMin
+            table.insert(parts, "Item Count: " .. min .. moreThanSuffix)
+        elseif rule.countMax then
+            local max = rule.countMax
+            table.insert(parts, "Item Count: " .. max .. lessThanSuffix)
+        end
 
-    -- Level requirement range
-    if rule.levelRequirementMin and rule.levelRequirementMax then
-        local min = rule.levelRequirementMin
-        local max = rule.levelRequirementMax
-        table.insert(parts, "Level Req: " .. min .. "-" .. max)
-    elseif rule.levelRequirementMin then
-        local min = rule.levelRequirementMin
-        table.insert(parts, "Level Req: " .. min .. moreThanSuffix)
-    elseif rule.levelRequirementMax then
-        local max = rule.levelRequirementMax
-        table.insert(parts, "Level Req: " .. max .. lessThanSuffix)
-     end
-
-         -- count range
-    if rule.countMin and rule.countMax then
-        local min = rule.countMin
-        local max = rule.countMax
-        table.insert(parts, "item Count: " .. min .. "-" .. max)
-    elseif rule.countMin then
-        local min = rule.countMin
-        table.insert(parts, "Item Count: " .. min .. moreThanSuffix)
-    elseif rule.countMax then
-        local max = rule.countMax
-        table.insert(parts, "Item Count: " .. max .. lessThanSuffix)
-     end
-
-    -- Rarity
-    local temp = {}
-    for rarityName, enabled in pairs(rule.rarity) do
-        if enabled then
-            local data = LF.ItemRaritiesByName[rarityName]
-            if data and data.color then
-                table.insert(temp, {
-                    id = data.id,
-                    name = rarityName,
-                    color = data.color
-                })
+        -- Rarity
+        local temp = {}
+        for rarityName, enabled in pairs(rule.rarity) do
+            if enabled then
+                local data = LF.ItemRaritiesByName[rarityName]
+                if data and data.color then
+                    table.insert(temp, {
+                        id = data.id,
+                        name = rarityName,
+                        color = data.color
+                    })
+                end
             end
         end
-    end
-    -- Sort by rarity ID
-    table.sort(temp, function(a, b) return a.id < b.id end)
-    -- Build final formatted list
-    local rarities = {}
-    for _, entry in ipairs(temp) do
-        local r, g, b = unpack(entry.color)
-        r, g, b = r * 255, g * 255, b * 255
-        local colorCode = string.format("|cff%02x%02x%02x", r, g, b)
-        table.insert(rarities, colorCode .. entry.name .. "|r")
-    end
-    if #rarities > 0 and #rarities <= #LF.ItemRarities then
-        table.insert(parts, "Rarity: " .. table.concat(rarities, ", "))
-    end
+        -- Sort by rarity ID
+        table.sort(temp, function(a, b) return a.id < b.id end)
+        -- Build final formatted list
+        local rarities = {}
+        for _, entry in ipairs(temp) do
+            local r, g, b = unpack(entry.color)
+            r, g, b = r * 255, g * 255, b * 255
+            local colorCode = string.format("|cff%02x%02x%02x", r, g, b)
+            table.insert(rarities, colorCode .. entry.name .. "|r")
+        end
+        if #rarities > 0 and #rarities <= #LF.ItemRarities then
+            table.insert(parts, table.concat(rarities, ", "))
+        end
 
+            -- item classes
+        for className, subClassTable in pairs(rule.classes) do
+            local knownSubclasses = LF.referenceItems[className]
+            local allEnabled = true
+            local enabledSubclasses = {}
 
-    --addType("Recipe", rule.recipe)
-    for class, subclasses in pairs(rule.classes) do
-        table.insert(parts, class)
+            for subClassName, _ in pairs(knownSubclasses) do
+                if subClassName ~= "__class" then
+                    if subClassTable[subClassName] ~= 1 then
+                        allEnabled = false
+                    else
+                        table.insert(enabledSubclasses, subClassName)
+                    end
+                end
+            end
+
+            if allEnabled then
+                table.insert(parts, "All "..className)
+            else
+                if #enabledSubclasses > 1 then
+                    table.insert(parts, table.concat(enabledSubclasses, ", "))
+                elseif #enabledSubclasses == 1 then
+                    table.insert(parts, enabledSubclasses[1])
+                end
+                -- if no enabled subclasses, do nothing
+            end
+        end
+
+        -- words
+        if rule.words then
+            local wordList = {}
+            for word, _ in pairs(rule.words) do
+                table.insert(wordList, "\"" .. word .. "\"")
+            end
+
+            if #wordList > 0 then
+                table.insert(parts, table.concat(wordList, ", "))
+            end
+        end
+
+            -- Learned
+        if rule.learned ~= "Any" then
+            local text = "Already Learned"
+            if rule.learned == "No" then text = "Not Learned" end
+            table.insert(parts, text)
+        end
+
+        -- Binds
+        if rule.soulbound ~= "Any" then
+            local text = "BoP"
+            if rule.soulbound == "No" then text = "Not BoP" end
+            table.insert(parts, text)
+        end
+
+        if #parts < 2 then
+            table.insert(parts, "EVERYTHING")
+        end
     end
 
     -- Loot alert
-    if rule.lootAlert then
-        table.insert(parts, "🔔 Alert")
+    if rule.alert ~= "Nothing" then
+        local icon = "|TInterface\\Icons\\INV_Misc_Bell_01:14:14|t"
+        local text = rule.alert .." " .. icon
+        table.insert(parts, text)
     end
 
     return table.concat(parts, " | ")

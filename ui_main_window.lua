@@ -14,6 +14,7 @@ local function OnFilterSelected(self)
     if LF.SetSelectedFilterByName(selectedName) then
         UIDropDownMenu_SetSelectedName(MainWindow.dropdown, selectedName)
         LF.hideFilterWindow()
+        LF.UpdateMacroText(true)
     end
 end
 

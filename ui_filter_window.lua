@@ -195,6 +195,7 @@ function LF.RefreshFilterWindowRuleList()
     end
     collectgarbage("collect")
 
+    LF.UpdateMacroText(true)
     local verticalGap = 43
     FilterWindow.content:SetSize(450, #LF.GetSelectedFilter().rules * verticalGap) 
     for i, rule in ipairs(LF.GetSelectedFilter().rules) do

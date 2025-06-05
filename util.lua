@@ -44,7 +44,7 @@ function LF.createBaseWindow(name, title)
     })
     frame:SetBackdropColor(unpack(LF.Colors.Background)) 
     frame:SetBackdropBorderColor(unpack(LF.Colors.Border)) 
-
+    frame:SetClampedToScreen(true)
     frame:EnableMouse(true)
     frame:SetMovable(true)
     frame:RegisterForDrag("LeftButton")

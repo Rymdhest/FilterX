@@ -38,12 +38,6 @@ LF.basicOptions = {
     ["No"]    = {ID = 3},
 }
 
-LF.bindingOptions = {
-    ["Any"] = {ID = 1},
-    ["never bound"]       = {ID = 2},
-    ["when picked up"]    = {ID = 3},
-    ["when equipped"]    = {ID = 4},
-}
 
 LF.ItemRarities = {
     [0] = { name = "Poor",      color = {0.62, 0.62, 0.62}},

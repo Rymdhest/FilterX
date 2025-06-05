@@ -1,5 +1,5 @@
 ## Interface: 30300
-## Title: |cff33FF33Dino|r|cffDDDDDDFilter|r  
+## Title: |cffFFee33Filter|r|cffff0000X|r
 ## Notes: Allows players to create custom rules for filtering items.
 ## Author: OpenTTD
 ## Version: 1.0.0
