@@ -22,6 +22,7 @@ eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
 eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
+eventFrame:RegisterEvent("UPDATE_BINDINGS")
 
 
 local lastSoldItem = nil
@@ -43,6 +44,15 @@ SlashCmdList["LOOTFILTER"] = function(msg)
     LF.showMainWindow()
 end
 
+-- Called on addon load or initialization
+local function SetupKeyBinding()
+    local key = GetBindingKey("DISENCHANT_NEXT")
+    if key and key ~= lastKey then
+        SetBindingClick(key, "DisenchantNextButton")
+        lastKey = key
+    end
+end
+
 local function AddToTooltip(tooltip)
     -- Avoid adding multiple times
     if tooltip.__LF_CustomLineAdded then return end
@@ -56,7 +66,7 @@ local function AddToTooltip(tooltip)
     local action, alert, rules = LF.EvaluateActionForItemIDAgainstRules(itemID)
     if action and #rules > 0 then
         local actionText = "|cff00ff00["..action.."]|r"
-        local actionicon = " |T" .. LF.actions[action].icon .. ":16:16:0:0|t"
+        local actionicon = " |T" .. LF.actions[action].icon .. ":14:14:0:0|t"
         local rulesText = " ("..table.concat(rules, ", ")..")"
         tooltip:AddLine(actionicon .. actionText..rulesText)
         tooltip.__LF_CustomLineAdded = true
@@ -84,21 +94,34 @@ if not LF.ScanTooltip then
     CreateScanTooltip()
 end
 
--- Self-healing tooltip search
-function LF.searchTooltipForString(itemLink, searchString)
+function LF.searchTooltipForString(itemLink, searchString, matchRedRequires)
+    local function isRed(r, g, b)
+        return r and g and b and r >= 0.9 and g <= 0.2 and b <= 0.2
+    end
+
     local function scan(tooltip)
         tooltip:ClearLines()
         tooltip:SetHyperlink(itemLink.link or itemLink)
 
-        if tooltip:NumLines() == 0 then
-            return false, "tooltip_empty"
-        end
+        if tooltip:NumLines() == 0 then return false, "tooltip_empty" end
 
         for i = 1, tooltip:NumLines() do
             local textObj = _G["LFScanTooltipTextLeft" .. i]
-            local text = textObj and textObj:GetText()
-            if text and text:lower():find(searchString:lower(), 1, true) then
-                return true
+            if textObj then
+                local text = textObj:GetText()
+                if text then
+                    if text:lower():find(searchString:lower(), 1, true) then
+                        -- Extra check for red "Requires" if requested
+                        if matchRedRequires then
+                            local r, g, b = textObj:GetTextColor()
+                            if isRed(r, g, b) then
+                                return true
+                            end
+                        else 
+                            return true
+                        end
+                    end
+                end
             end
         end
 
@@ -108,14 +131,16 @@ function LF.searchTooltipForString(itemLink, searchString)
     -- Try once
     local result, err = scan(LF.ScanTooltip)
 
-    -- If tooltip is broken (e.g., after AFK), rebuild and retry once
+    -- Retry if tooltip broken
     if err == "tooltip_empty" then
-        CreateScanTooltip()
+        LF.ScanTooltip = CreateFrame("GameTooltip", "LFScanTooltip", UIParent, "GameTooltipTemplate")
+        LF.ScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
         result = scan(LF.ScanTooltip)
     end
 
     return result or false
 end
+
 
 local function removeItemAutoSell(itemLink)
     if not LF.GetSelectedFilter() then return end
@@ -156,6 +181,7 @@ function LF:ADDON_LOADED(addonName)
         end)
 
         LF.showDisenchantWindow()
+        SetupKeyBinding()
 
         hooksecurefunc("UseContainerItem", function(bag, slot)
             pendingDisenchantItem = GetContainerItemLink(bag, slot)
@@ -184,6 +210,12 @@ local function checkConditionForRuleAndItem(rule, item)
         for word, _ in pairs(rule.words) do
             empty = false
 
+            local negate = false
+            if word:sub(1, 1) == "!" then
+                negate = true
+                word = word:sub(2) -- remove leading "!"
+            end
+
             -- Escape special characters in the word (like ":" or "-")
             local escapedWord = word:lower():gsub("([^%w])", "%%%1")
 
@@ -193,16 +225,17 @@ local function checkConditionForRuleAndItem(rule, item)
             -- Pad the item name to simulate word boundaries at start/end
             local paddedName = " " .. item.name:lower() .. " "
 
-            if paddedName:find(pattern) then
+            local matches = paddedName:find(pattern) ~= nil
+
+            if (not negate and matches) or (negate and not matches) then
                 found = true
-                break -- optional: stop checking once a match is found
+                break -- stop once a match is confirmed
             end
         end
         if not found and not empty then
             return false
         end
     end
-
 
 
     ------------------ MIN-MAX ------------------------
@@ -251,6 +284,15 @@ local function checkConditionForRuleAndItem(rule, item)
         if rule.soulbound == "Yes" and not bindOnPickup then return false end
         if rule.soulbound == "No" and bindOnPickup then return false end
     end
+
+
+            ------------------ REQUIRES ------------------------
+    if rule.requires ~= "Any" then
+        local failRequirement = LF.searchTooltipForString(item, "Requires", true)
+        if rule.requires == "Yes" and failRequirement then return false end
+        if rule.requires == "No" and not failRequirement then return false end
+    end
+
 
     return true
 end
@@ -542,6 +584,11 @@ end
 function LF:UNIT_SPELLCAST_FAILED_QUIET()
     LF.lastAtoDisenchantClickTime = 0
 end
+
+function LF:UPDATE_BINDINGS()
+    SetupKeyBinding()
+end
+
 
 local trackLootTypes = {
     item = true,   -- "You receive item:"

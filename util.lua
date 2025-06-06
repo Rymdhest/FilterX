@@ -60,6 +60,7 @@ function LF.createBaseWindow(name, title)
     -- Close button
     frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
     frame.closeButton:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+    frame:SetFrameStrata("MEDIUM"   )
     frame:Hide()
     return frame
 end

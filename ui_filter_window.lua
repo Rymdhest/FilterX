@@ -116,7 +116,7 @@ function LF.createFilterWindow()
     FilterWindow.content = CreateFrame("Frame", "LootFilterContentFrame", FilterWindow.scrollFrame)
     FilterWindow.scrollFrame:SetScrollChild(FilterWindow.content)
 
-    FilterWindow:SetFrameStrata("MEDIUM")
+    FilterWindow:SetFrameLevel(20)
 end
 
 
@@ -229,13 +229,22 @@ function LF.RefreshFilterWindowRuleList()
         -- Name text (bold)
         local name = entry:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         name:SetPoint("TOPLEFT", icon, "TOPRIGHT", 5, 8)
-        name:SetText(rule.name)
+        -- Loot alert
+        local nameString = rule.name
+        if rule.alert ~= "Nothing" then
+            local icon = "|TInterface\\Icons\\INV_Misc_Bell_01:14:14|t"
+            local text = " • "..rule.alert .." " .. icon
+            nameString = nameString.."|cff"..LF.RGBToHex(unpack(LF.Colors.Highlight)).. text.."|r"
+        end
+
+
+        name:SetText(nameString)
         name:SetTextColor(unpack(LF.Colors.Text))
 
         -- Description text (smaller font)
         local desc = entry:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         desc:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -2)
-        desc:SetWidth(400)  -- wrap text if too long
+        desc:SetWidth(370)  -- wrap text if too long
         desc:SetJustifyH("LEFT")
         desc:SetText(LF.describeRule(rule))
         desc:SetTextColor(unpack(LF.Colors.Highlight))

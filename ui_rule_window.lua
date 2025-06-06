@@ -85,7 +85,7 @@ local function createNameEdit()
     local nameInputBox = CreateFrame("EditBox", "MyEditableTextField2", RuleWindow, "InputBoxTemplate")
     nameInputBox:SetSize(90, 30)
     nameInputBox:SetPoint("LEFT", nameText, "RIGHT", 10, 0)
-    nameInputBox:SetAutoFocus(false) -- prevent it from stealing focus immediately
+    nameInputBox:SetAutoFocus(false)
     nameInputBox:SetMaxLetters(30)
     nameInputBox:SetFontObject("GameFontHighlightSmall")
     nameInputBox:SetScript("OnEnterPressed", function(self)
@@ -94,13 +94,38 @@ local function createNameEdit()
         else 
             nameInputBox:SetText(LF.GetSelectedRule().name)
         end
-        self:ClearFocus() -- unfocus after pressing Enter
+        self:ClearFocus()
     end)
     nameInputBox:SetScript("OnEscapePressed", function(self)
         nameInputBox:SetText(LF.GetSelectedFilter().name)
         self:ClearFocus()
     end)
     return nameInputBox
+end
+
+local function createRegexEdit()
+
+
+    local regexInputBox = CreateFrame("EditBox", "regexInputBox", RuleWindow, "InputBoxTemplate")
+    local label = regexInputBox :CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    label:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -215, 10)
+    label:SetText("Regex:")
+    label:SetTextColor(unpack(LF.Colors.Text))
+    regexInputBox:SetSize(150, 30)
+    regexInputBox:SetPoint("LEFT", label, "RIGHT", 10, 0)
+    regexInputBox:SetAutoFocus(false)
+    regexInputBox:SetMaxLetters(30)
+    regexInputBox:SetFontObject("GameFontHighlightSmall")
+    regexInputBox:SetScript("OnEnterPressed", function(self)
+        LF.GetSelectedRule().regex = self:GetText()
+        LF.RefreshFilterWindowRuleList()
+        self:ClearFocus() 
+    end)
+    regexInputBox:SetScript("OnEscapePressed", function(self)
+        regexInputBox:SetText(LF.GetSelectedRule().regex)
+        self:ClearFocus()
+    end)
+    return regexInputBox
 end
 
 local function setShowOrHideFram(frame, show)
@@ -124,7 +149,9 @@ local function handleModeChange(mode)
     setShowOrHideFram(RuleWindow.classSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.learnedSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.soulboundSelect, isItemListMode)
+    setShowOrHideFram(RuleWindow.requiresSelect, isItemListMode)
     setShowOrHideFram(RuleWindow.wordList, isItemListMode)
+    setShowOrHideFram(RuleWindow.regexInput, isItemListMode)
     
 
 end
@@ -186,11 +213,25 @@ local function createModeSelect()
     })
 end
 
+local function createRequiresSelect()
+    return LF.CreateDropdown({
+        labelText = "Fullfil Item Requirement:",
+        labelX = -130,
+        labelY = -350,
+        width = 50,
+        optionsTable = LF.basicOptions,
+        getText = function(key) return key end,
+        onSelect = function(rule, selectedKey)
+            rule.requires = selectedKey
+        end
+    })
+end
+
 local function createSoulboundSelect()
     return LF.CreateDropdown({
         labelText = "BoP:",
-        labelX = -210,
-        labelY = -330,
+        labelX = -195,
+        labelY = -290,
         width = 50,
         optionsTable = LF.basicOptions,
         getText = function(key) return key end,
@@ -203,11 +244,17 @@ end
 local function createAlertSelect()
     return LF.CreateDropdown({
         labelText = "Alert:",
-        labelX = -100,
-        labelY = -360,
-        width = 70,
+        labelX = -140,
+        labelY = -70,
+        width = 100,
         optionsTable = LF.alerts,
-        getText = function(key) return key end,
+        getText = function(key, val)
+            if key == "Nothing" then
+                return key
+            else
+                return  "|T" .. "Interface\\Icons\\INV_Misc_Bell_01" .. ":14:14:0:0|t "..key
+            end
+        end,
         onSelect = function(rule, selectedKey)
             rule.alert = selectedKey
         end
@@ -217,8 +264,8 @@ end
 local function createLearnedSelect()
     return LF.CreateDropdown({
         labelText = "Learned:",
-        labelX = -210,
-        labelY = -360,
+        labelX = -195,
+        labelY = -320,
         width = 50,
         optionsTable = LF.basicOptions,
         getText = function(key) return key end,
@@ -230,7 +277,7 @@ end
 
 local function createActionSelect()
     return LF.CreateDropdown({
-        labelText = "Outcome:",
+        labelText = "Action:",
         labelX = -140,
         labelY = -40,
         width = 100,
@@ -247,8 +294,8 @@ end
 
 local function createWordList()
     local wordListFrame = CreateFrame("Frame", "wordListFrame", RuleWindow)
-    wordListFrame:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 235, -160)
-    wordListFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -145, 170)
+    wordListFrame:SetPoint("TOPLEFT", RuleWindow, "TOPLEFT", 240, -180)
+    wordListFrame:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -140, 155)
 
 
     local label = wordListFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -278,7 +325,7 @@ local function createWordList()
     -- Input box
     local inputBox = CreateFrame("EditBox", "addWordDbox", wordListFrame, "InputBoxTemplate")
     inputBox:SetSize(80, 20)
-    inputBox:SetPoint("TOPLEFT", wordListFrame, "BOTTOMLEFT", 10, -10)
+    inputBox:SetPoint("TOPLEFT", wordListFrame, "BOTTOMLEFT", 10, -3)
     inputBox:SetAutoFocus(false)
     inputBox:SetFontObject("GameFontHighlightSmall")
     -- Handle pressing Enter
@@ -431,7 +478,7 @@ end
 local function createRarityCheckboxes()
     local rarityContainer = CreateFrame("Frame", nil, RuleWindow)
     rarityContainer:SetSize(200, #LF.ItemRarities*20)
-    rarityContainer:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -30, 90)
+    rarityContainer:SetPoint("BOTTOMRIGHT", RuleWindow, "BOTTOMRIGHT", -30, 75)
 
     local rarityCheckboxes = {}
     for id, data in pairs(LF.ItemRarities) do
@@ -475,18 +522,20 @@ function LF.createRuleWindow()
     RuleWindow.learnedSelect = createLearnedSelect()
     RuleWindow.alertSelect = createAlertSelect()
     RuleWindow.soulboundSelect = createSoulboundSelect()
+    RuleWindow.requiresSelect = createRequiresSelect()
     RuleWindow.modeSelect = createModeSelect()
     RuleWindow.wordList = createWordList()
     RuleWindow.itemList = createItemList()
-    RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -80, "goldValueMin", "goldValueMax", "GoldValue")
-    RuleWindow.itemLevel = createMinMaxInput("Item Level:", -100, "itemLevelMin", "itemLevelMax", "ItemLevel")
-    RuleWindow.levelReq = createMinMaxInput("Level Req:", -120, "levelRequirementMin", "levelRequirementMax", "LevelReq")
+    RuleWindow.regexInput = createRegexEdit()
+    RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -100, "goldValueMin", "goldValueMax", "GoldValue")
+    RuleWindow.itemLevel = createMinMaxInput("Item Level:", -120, "itemLevelMin", "itemLevelMax", "ItemLevel")
+    RuleWindow.levelReq = createMinMaxInput("Level Req:", -140, "levelRequirementMin", "levelRequirementMax", "LevelReq")
     --RuleWindow.itemCount = createMinMaxInput("Item Count:", -160, "countMin", "countMax", "ItemCount")
     RuleWindow.rarityBoxes = createRarityCheckboxes()
 
     RuleWindow.classSelect = LF.createClassSelect()
 
-    RuleWindow:SetFrameStrata("HIGH")
+    RuleWindow:SetFrameLevel(30)
 end
 
 
@@ -510,6 +559,8 @@ function LF.showRuleWindow()
     end
     LF.refreshClassSelect()
 
+    if rule.regex then RuleWindow.regexInput:SetText(rule.regex) end
+
     RuleWindow.actionSelect.selectedValue = rule.action
     UIDropDownMenu_SetText(RuleWindow.actionSelect, "|T" .. LF.actions[rule.action].icon ..":14:14:0:0|t "..rule.action)
     UIDropDownMenu_Refresh(RuleWindow.actionSelect)
@@ -519,12 +570,20 @@ function LF.showRuleWindow()
     UIDropDownMenu_Refresh(RuleWindow.learnedSelect)
 
     RuleWindow.alertSelect.selectedValue = rule.alert
-    UIDropDownMenu_SetText(RuleWindow.alertSelect, rule.alert)
+    if (rule.alert == "Nothing") then
+        UIDropDownMenu_SetText(RuleWindow.alertSelect, rule.alert)
+    else 
+        UIDropDownMenu_SetText(RuleWindow.alertSelect, "|T" .. "Interface\\Icons\\INV_Misc_Bell_01" .. ":14:14:0:0|t "..rule.alert)
+    end
     UIDropDownMenu_Refresh(RuleWindow.alertSelect)
 
     RuleWindow.soulboundSelect.selectedValue = rule.soulbound
     UIDropDownMenu_SetText(RuleWindow.soulboundSelect, rule.soulbound)
     UIDropDownMenu_Refresh(RuleWindow.soulboundSelect)
+
+    RuleWindow.requiresSelect.selectedValue = rule.requires
+    UIDropDownMenu_SetText(RuleWindow.requiresSelect, rule.requires)
+    UIDropDownMenu_Refresh(RuleWindow.requiresSelect)
 
     RuleWindow.modeSelect.selectedValue = rule.mode
     UIDropDownMenu_SetText(RuleWindow.modeSelect, LF.modes[rule.mode])

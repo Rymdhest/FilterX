@@ -34,7 +34,7 @@ function LF.InitializeDropdown(self, level)
 
 
 function LF.createMainWindow()
-    MainWindow = LF.createBaseWindow("mainWindow", LF.addonName .. " by " .. "|cffffff00OpenTTD|r")
+    MainWindow = LF.createBaseWindow("mainWindow", "".. "|cffFFee33Filter|r|cffff0000X|r" .. " by " .. "|cffffff00OpenTTD|r")
     LF.MainWindow = MainWindow
     MainWindow.closeButton:SetScript("OnClick", function(self)
         LF.hideMainWindow()
@@ -138,7 +138,7 @@ function LF.createMainWindow()
             LF.CopyFilter(LF.GetSelectedFilter())
     end)
 
-    MainWindow:SetFrameStrata("LOW")
+    MainWindow:SetFrameLevel(10)
 end
 
 

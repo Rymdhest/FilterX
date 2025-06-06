@@ -74,8 +74,10 @@ function LF.createNewRule()
         ["Poor"] = false,
       },
       classes = {},
+      regex = "",
       learned = "Any",
       soulbound = "Any",
+      requires = "Any",
       alert = "Nothing",
       action = "Sell",      -- keep, delete, disenchant, sell, nothing
   }
@@ -93,7 +95,7 @@ function LF.describeRule(rule)
     if rule.mode == "Items" then
 
         local count = 0
-        local max = 30
+        local max = 16
         for itemID, value in pairs(rule.itemIDs) do
             count = count+1
         end
@@ -110,7 +112,7 @@ function LF.describeRule(rule)
             local name = ""
             local color = LF.RGBToHex(unpack(LF.ItemRarities[item.quality].color))
             if count < 4 then name = " |cff"..color..item.name.."|r " end
-            itemstring = itemstring.." |T" .. icon ..":13:13:0:0|t"..name
+            itemstring = itemstring.." |T" .. icon ..":12:12:0:0|t"..name
             count2 = count2+1
         end
         table.insert(parts, itemstring)
@@ -262,14 +264,7 @@ function LF.describeRule(rule)
         end
     end
 
-    -- Loot alert
-    if rule.alert ~= "Nothing" then
-        local icon = "|TInterface\\Icons\\INV_Misc_Bell_01:14:14|t"
-        local text = rule.alert .." " .. icon
-        table.insert(parts, text)
-    end
-
-    return table.concat(parts, " | ")
+    return table.concat(parts, " • ")
 end
 
 function LF.GetIconForRuleAction(action)

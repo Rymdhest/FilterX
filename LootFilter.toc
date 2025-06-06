@@ -19,3 +19,4 @@ ui_filter_window.lua
 ui_rule_window.lua
 alert.lua
 alert.xml
+Bindings.xml

@@ -35,6 +35,7 @@ function LF.updateNextDisenchantitem(item)
         disenchantWindow.nextItemLabel:SetText(item)
         disenchantWindow.nextItemIcon:SetTexture(select(10, GetItemInfo(item)))
         disenchantWindow.countLabel:SetText(LF.disenchantWindow.count.. " Items left")
+        disenchantWindow.nextItemLink = item
     end
 end
 
@@ -74,10 +75,23 @@ function LF.createDisenchantWindow()
         LF.db.enchantWindowPos = {point = point, relativePoint = relativePoint, x = x, y = y}
     end)
     LF.disenchantWindow = disenchantWindow
-    disenchantWindow:SetFrameStrata("HIGH")
+    disenchantWindow:SetFrameStrata("MEDIUM")
+    disenchantWindow:SetFrameLevel(5)
 
 
+    -- Tooltip handlers
+    disenchantWindow:SetScript("OnEnter", function(self)
+        local itemLink = disenchantWindow.nextItemLink
+        if itemLink then
+            GameTooltip:SetOwner(self, "ANCHOR_TOP")
+            GameTooltip:SetHyperlink(itemLink)
+            GameTooltip:Show()
+        end
+    end)
 
+    disenchantWindow:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
 
     disenchantWindow.countLabel = disenchantWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     disenchantWindow.countLabel:SetText("Count")
@@ -97,7 +111,7 @@ function LF.createDisenchantWindow()
     button:SetSize(100, 25)
     button:SetPoint("TOP", disenchantWindow, "TOP", 0, -40)
     button:SetText("Disenchant")
-
+    button:RegisterForClicks("AnyUp")
     -- Set initial macro text (will be updated dynamically) 
     button:SetAttribute("type", "macro")
     button:SetScript("PreClick", function(self)
@@ -127,7 +141,6 @@ function LF.createDisenchantWindow()
     disenchantWindow.button = button
     LF.UpdateMacroText(true)
 
-    disenchantWindow.disenchantButton = disenchantButton
 end
 
 
@@ -146,5 +159,10 @@ function LF.hideDisenchantWindow()
     if disenchantWindow then disenchantWindow:Hide() end
 end
 
-
-
+function LF_PerformDissenchant()
+    -- Simulate button click or call whatever function you want
+    if LF and LF.disenchantWindow.button then
+        LF.disenchantWindow.button:Click()
+    end
+end
+BINDING_HEADER_LOOT_FILTER = "|cffFFFFFFFilter|r|cffff0000X|r"
