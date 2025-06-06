@@ -42,7 +42,7 @@ function LF.createMainWindow()
 
     -- active filter text
     local activeFilterText = MainWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    activeFilterText:SetPoint("TOPLEFT", MainWindow, "TOPLEFT", 20, -100)
+    activeFilterText:SetPoint("TOPLEFT", MainWindow, "TOPLEFT", 20, -60)
     activeFilterText:SetText("Active filter:")
     activeFilterText:SetTextColor(unpack(LF.Colors.Text))
 
@@ -50,14 +50,14 @@ function LF.createMainWindow()
     MainWindow.dropdown = CreateFrame("Frame", "LootFilterDropdown", MainWindow, "UIDropDownMenuTemplate")
     MainWindow.dropdown:SetPoint("LEFT", activeFilterText, "RIGHT", -10, 0)
     UIDropDownMenu_SetSelectedID(MainWindow.dropdown, 1)
-    UIDropDownMenu_SetWidth(MainWindow.dropdown, 100)
+    UIDropDownMenu_SetWidth(MainWindow.dropdown, 110)
     UIDropDownMenu_SetText(MainWindow.dropdown, "")
 
     -- new filter button
     local newFilterButton = CreateFrame("Button", "LF_newFilterButton", MainWindow, "UIPanelButtonTemplate")
     newFilterButton:SetSize(100, 22)
     newFilterButton:SetText("New Filter")
-    newFilterButton:SetPoint("TOPLEFT", MainWindow, "TOPLEFT", 10, -50)
+    newFilterButton:SetPoint("TOPLEFT", MainWindow, "TOPLEFT", 10, -80)
     newFilterButton:SetScript("OnClick", function()
         local newFilter = LF.CreateNewFilter()
         LF.SetSelectedFilterByName(newFilter.name)
@@ -66,33 +66,38 @@ function LF.createMainWindow()
         LF.showFilterWindow()
     end)
 
-    -- import filter button
+
+
+
+
+                -- copy filter button
+    local copyFilterButton = CreateFrame("Button", "LF_copyFilterButton", MainWindow, "UIPanelButtonTemplate")
+    copyFilterButton:SetSize(100, 22)
+    copyFilterButton:SetText("Copy Filter")
+    copyFilterButton:SetPoint("LEFT", newFilterButton, "RIGHT", 10, 0)
+    copyFilterButton:SetScript("OnClick", function()
+            LF.CopyFilter(LF.GetSelectedFilter())
+    end)
+
+            -- import filter button
     local importFilterButton = CreateFrame("Button", "LF_importFilterButton", MainWindow, "UIPanelButtonTemplate")
     importFilterButton:SetSize(100, 22)
     importFilterButton:SetText("Import Filter")
-    importFilterButton:SetPoint("LEFT", newFilterButton, "RIGHT", 0, 0)
+    importFilterButton:SetPoint("LEFT", copyFilterButton, "RIGHT", 10, 0)
     importFilterButton:SetScript("OnClick", function()
         LF.showImporttWindow(true, "Paste here...")
-    end)
-
-    -- edit filter button
-    local editFilterButton = CreateFrame("Button", "LF_EditFilterButton", MainWindow, "UIPanelButtonTemplate")
-    editFilterButton:SetSize(100, 22)
-    editFilterButton:SetText("Edit Filter")
-    editFilterButton:SetPoint("LEFT", MainWindow.dropdown, "RIGHT", -10, 0)
-    editFilterButton:SetScript("OnClick", function()
-            LF.showFilterWindow()
     end)
 
         -- export filter button
     local exportFilterButton = CreateFrame("Button", "LF_exportFilterButton", MainWindow, "UIPanelButtonTemplate")
     exportFilterButton:SetSize(100, 22)
     exportFilterButton:SetText("Export Filter")
-    exportFilterButton:SetPoint("LEFT", editFilterButton, "RIGHT", 0, 0)
+    exportFilterButton:SetPoint("LEFT", importFilterButton, "RIGHT", 10, 0)
     exportFilterButton:SetScript("OnClick", function()
 
         local LibDeflate = LibStub("LibDeflate")
         local serializer = LibStub("LibSerialize")
+        if not LF.GetSelectedFilter() then return end
         local data = LF.GetSelectedFilter()
         local serialized = serializer:Serialize(data)
         local compressed = LibDeflate:CompressDeflate(serialized)
@@ -101,12 +106,24 @@ function LF.createMainWindow()
 
     end)
 
+        -- edit filter button
+    local editFilterButton = CreateFrame("Button", "LF_EditFilterButton", MainWindow, "UIPanelButtonTemplate")
+    editFilterButton:SetSize(100, 22)
+    editFilterButton:SetText("Edit Filter")
+    editFilterButton:SetPoint("BOTTOM", importFilterButton, "TOP", 0, 5)
+    editFilterButton:SetScript("OnClick", function()
+            LF.showFilterWindow()
+    end)
+
+
+
             -- delete filter button
     local deleteFilterButton = CreateFrame("Button", "LF_deleteFilterButton", MainWindow, "UIPanelButtonTemplate")
     deleteFilterButton:SetSize(100, 22)
     deleteFilterButton:SetText("Delete Filter")
-    deleteFilterButton:SetPoint("TOPLEFT", activeFilterText, "BOTTOMLEFT", 0, -20)
+    deleteFilterButton:SetPoint("LEFT", editFilterButton, "RIGHT", 10, 0)
     deleteFilterButton:SetScript("OnClick", function()
+        if not LF.GetSelectedFilter() then return end
         StaticPopupDialogs["DELETE_RULE_CONFIRM"] = {
             text = "Are you sure you want to delete the "..LF.GetSelectedFilter().name.." filter?",
             button1 = "Yes",
@@ -127,15 +144,6 @@ function LF.createMainWindow()
         }
         StaticPopup_Show("DELETE_RULE_CONFIRM")
 
-    end)
-
-                -- copy filter button
-    local copyFilterButton = CreateFrame("Button", "LF_copyFilterButton", MainWindow, "UIPanelButtonTemplate")
-    copyFilterButton:SetSize(100, 22)
-    copyFilterButton:SetText("Copy Filter")
-    copyFilterButton:SetPoint("LEFT", deleteFilterButton, "RIGHT", 0, 0)
-    copyFilterButton:SetScript("OnClick", function()
-            LF.CopyFilter(LF.GetSelectedFilter())
     end)
 
     MainWindow:SetFrameLevel(10)

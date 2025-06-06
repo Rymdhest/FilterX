@@ -15,6 +15,8 @@ local function import()
         local success, data = serializer:Deserialize(decompressed)
         if not success then return nil, "Deserialization failed" end
 
+        data.name = LF.createBestAvailableFilterName(data.name)
+
         table.insert(LF.db.filters, data)
         LF.hideExportWindow()
 end
@@ -65,7 +67,7 @@ function LF.createImportWindow()
         import()
     end)
     importWindow.importButton = importButton
-    importWindow:SetFrameStrata("MEDIUM")
+    importWindow:SetFrameLevel(40)
 end
 
 function LF.showImporttWindow(import, text)

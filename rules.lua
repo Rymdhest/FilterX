@@ -108,11 +108,17 @@ function LF.describeRule(rule)
             end
             local item = LF.GetItemInfoObject(itemID)
             local icon = "Interface\\Icons\\INV_Misc_QuestionMark"
-            if item then icon = item.icon end
             local name = ""
-            local color = LF.RGBToHex(unpack(LF.ItemRarities[item.quality].color))
-            if count < 4 then name = " |cff"..color..item.name.."|r " end
-            itemstring = itemstring.." |T" .. icon ..":12:12:0:0|t"..name
+            if item then
+                icon = item.icon
+                local color = LF.RGBToHex(unpack(LF.ItemRarities[item.quality].color))
+                if count < 4 then name = " |cff"..color..item.name.."|r " end
+                itemstring = itemstring.." |T" .. icon ..":12:12:0:0|t"..name
+            else
+                local color = LF.RGBToHex(unpack(LF.Colors.Text))
+                if count < 4 then name = " |cff"..color.."Loading...".."|r " end
+                itemstring = itemstring.." |T" .. icon ..":12:12:0:0|t"..name
+            end
             count2 = count2+1
         end
         table.insert(parts, itemstring)

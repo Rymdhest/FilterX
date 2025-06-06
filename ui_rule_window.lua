@@ -823,6 +823,17 @@ function LF.createClassSelect()
     content:SetSize(200, 1)
     scrollFrame:SetScrollChild(content)
 
+        -- Create a border frame just behind the scrollFrame
+    local border = CreateFrame("Frame", nil, classSelectFrame)
+    border:SetPoint("TOPLEFT", scrollFrame, -1, 1)
+    border:SetPoint("BOTTOMRIGHT", scrollFrame, 1, -1)
+    border:SetFrameLevel(scrollFrame:GetFrameLevel() - 1) -- place behind
+    border:SetBackdrop({
+        edgeFile = "Interface\\Buttons\\WHITE8x8", 
+        edgeSize = 1,
+    })
+    border:SetBackdropBorderColor(unpack(LF.Colors.Border))
+
     classSelectFrame.content = content
     classSelectFrame.rows = {} -- unified rows table
 

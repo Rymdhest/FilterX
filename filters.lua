@@ -4,6 +4,7 @@ function LF.SetSelectedFilterByName(name)
     for _, filter in ipairs(LF.db.filters or {}) do
         if filter.name == name then
             LF.db.selectedFilterName = name
+            LF.QueryAllRulesInFilter()
             return true
         end
     end
@@ -29,18 +30,21 @@ local function IsFilterNameUnique(name)
     return true
 end
 
-function LF.CreateNewFilter()
-    local baseName = "New Filter"
-    local uniqueName = baseName
+function LF.createBestAvailableFilterName(preferedName)
+    local uniqueName = preferedName
     local i = 1
 
     while not IsFilterNameUnique(uniqueName) do
         i = i + 1
-        uniqueName = baseName .. " " .. i
+        uniqueName = preferedName .. " " .. i
     end
 
+    return uniqueName
+end
+
+function LF.CreateNewFilter()
     local filter = {
-        name = uniqueName,
+        name = LF.createBestAvailableFilterName("New Filter"),
         rules = {},
         isAutoAddWhenVendoring = false,
         isAutoAddWhenDisenchanting = false,
@@ -118,8 +122,9 @@ local function DeepCopy(orig)
 end
 
 function LF.CopyFilter(originalFilter)
+    if not originalFilter then return end
     local newFilter = DeepCopy(originalFilter)
-    newFilter.name = originalFilter.name.." (copy)"
+    newFilter.name = LF.createBestAvailableFilterName(originalFilter.name.." (copy)")
     table.insert(LootFilterDB.filters, newFilter)
     LF.SetSelectedFilterByName(newFilter.name)
     return newFilter

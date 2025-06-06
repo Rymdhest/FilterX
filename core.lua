@@ -5,30 +5,9 @@ LF.addonName = name
 
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
-eventFrame:RegisterEvent("BAG_UPDATE")
-eventFrame:RegisterEvent("MERCHANT_SHOW")
-eventFrame:RegisterEvent("MERCHANT_UPDATE")
-eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
-eventFrame:RegisterEvent("ITEM_PUSH")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-eventFrame:RegisterEvent("LOOT_OPENED")
-eventFrame:RegisterEvent("LOOT_CLOSED")
-eventFrame:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
-eventFrame:RegisterEvent("CHAT_MSG_LOOT")
-eventFrame:RegisterEvent("CHAT_MSG_SYSTEM")
-
-eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
-eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
-eventFrame:RegisterEvent("UPDATE_BINDINGS")
-
 
 local lastSoldItem = nil
-SLASH_LOOTFILTER1 = "/FX"
-SLASH_LOOTFILTER2 = "/LootFilter"
-SLASH_LOOTFILTER2 = "/FilterX"
+
 local MAX_AT_ONCE = 80
 local isAutoing = false
 
@@ -40,9 +19,6 @@ local suceedDisenchantTime = 0
 local updateDisenchantOnLootClose = false
 
 
-SlashCmdList["LOOTFILTER"] = function(msg)
-    LF.showMainWindow()
-end
 
 -- Called on addon load or initialization
 local function SetupKeyBinding()
@@ -151,43 +127,77 @@ local function removeItemAutoSell(itemLink)
     end
 end
 
+function LF.init()
+    print("initiation")
+    eventFrame:RegisterEvent("BAG_UPDATE")
+    eventFrame:RegisterEvent("MERCHANT_SHOW")
+    eventFrame:RegisterEvent("MERCHANT_UPDATE")
+    eventFrame:RegisterEvent("ITEM_LOCK_CHANGED")
+    eventFrame:RegisterEvent("ITEM_PUSH")
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    eventFrame:RegisterEvent("LOOT_OPENED")
+    eventFrame:RegisterEvent("LOOT_CLOSED")
+    eventFrame:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
+    eventFrame:RegisterEvent("CHAT_MSG_LOOT")
+    eventFrame:RegisterEvent("CHAT_MSG_SYSTEM")
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
+    eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
+    eventFrame:RegisterEvent("UPDATE_BINDINGS")
+
+    SLASH_LOOTFILTER1 = "/FX"
+    SLASH_LOOTFILTER2 = "/LootFilter"
+    SLASH_LOOTFILTER3 = "/FilterX"
+
+    SlashCmdList["LOOTFILTER"] = function(msg)
+        LF.showMainWindow()
+    end
+
+    LF.db.isAutoVendoring = true
+    LF.isAutoDisenchanting = false
+    LF.lastAtoDisenchantClickTime = 0
+
+    GameTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
+    ItemRefTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
+    GameTooltip:HookScript("OnTooltipCleared", function(self)
+        self.__LF_CustomLineAdded = false
+    end)
+
+
+    LF.buildReferenceTable()
+
+    LF.QueryAllRulesInFilter()
+    LF.showDisenchantWindow()
+
+    -- Hook into Buyback function
+    hooksecurefunc("BuybackItem", function(index)
+        if not LF.GetSelectedFilter().isAutoAddWhenVendoring then return end
+        local itemLink = GetBuybackItemLink(index)
+        if itemLink then
+            removeItemAutoSell(itemLink)
+        end
+    end)
+
+    SetupKeyBinding()
+
+    hooksecurefunc("UseContainerItem", function(bag, slot)
+        pendingDisenchantItem = GetContainerItemLink(bag, slot)
+        UseContainerItemTime = GetTime()
+    end)
+    LF.doneInit = true
+end
+
 function LF:ADDON_LOADED(addonName)
     if addonName == name then
+        print("addon loaded")
         LootFilterDB = LootFilterDB or {}
         LF.db = LootFilterDB
         LF.db.filters = LF.db.filters or {}
-        LF.db.isAutoVendoring = true
-
-        LF.isAutoDisenchanting = false
-
-        LF.lastAtoDisenchantClickTime = 0
-
         eventFrame:UnregisterEvent("ADDON_LOADED")
 
-        LF.InitializeItemClassLookup()
-        --LF.showMainWindow()
-        GameTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
-        ItemRefTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
-        GameTooltip:HookScript("OnTooltipCleared", function(self)
-            self.__LF_CustomLineAdded = false
-        end)
-        -- Hook into Buyback function
-        hooksecurefunc("BuybackItem", function(index)
-            if not LF.GetSelectedFilter().isAutoAddWhenVendoring then return end
-            local itemLink = GetBuybackItemLink(index)
-            if itemLink then
-                removeItemAutoSell(itemLink)
-            end
-        end)
-
-        LF.showDisenchantWindow()
-        SetupKeyBinding()
-
-        hooksecurefunc("UseContainerItem", function(bag, slot)
-            pendingDisenchantItem = GetContainerItemLink(bag, slot)
-            UseContainerItemTime = GetTime()
-        end)
-
+        LF.QueryReferences()
     end
 end
 

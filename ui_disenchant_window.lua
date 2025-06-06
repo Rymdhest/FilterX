@@ -39,7 +39,7 @@ function LF.updateNextDisenchantitem(item)
     end
 end
 
-function LF.createDisenchantWindow()
+function LF.    createDisenchantWindow()
     disenchantWindow = CreateFrame("Frame", "DisenchantFrame", UIParent)
     LF.disenchantWindow = disenchantWindow
     LF.disenchantWindow.count = 0
@@ -150,8 +150,6 @@ function LF.showDisenchantWindow()
     if not disenchantWindow then
         LF.createDisenchantWindow()
     end
-    disenchantWindow:ClearAllPoints()
-    disenchantWindow:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     disenchantWindow:Show()
 end
 
