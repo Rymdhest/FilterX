@@ -1,8 +1,8 @@
 # FilterX
 
 <div align="center">
-  <img src="screenshots/filterx_main.png" alt="FilterX Main Interface" width="400px" />
-  <img src="screenshots/filterx_disEnchantUI.png" alt="FilterX Disenchant UI" width="400px" />
+  <img src="screenshots/FilterX rule window" alt="FilterX Main Interface" width="400px" />
+  <img src="screenshots/FilterX filter window.png" alt="FilterX Disenchant UI" width="400px" />
 </div>
 
 ---
