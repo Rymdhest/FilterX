@@ -128,7 +128,6 @@ local function removeItemAutoSell(itemLink)
 end
 
 function LF.init()
-    print("initiation")
     eventFrame:RegisterEvent("BAG_UPDATE")
     eventFrame:RegisterEvent("MERCHANT_SHOW")
     eventFrame:RegisterEvent("MERCHANT_UPDATE")
@@ -137,15 +136,14 @@ function LF.init()
     eventFrame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     eventFrame:RegisterEvent("LOOT_OPENED")
     eventFrame:RegisterEvent("LOOT_CLOSED")
-    eventFrame:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
     eventFrame:RegisterEvent("UNIT_SPELLCAST_START")
     eventFrame:RegisterEvent("CHAT_MSG_LOOT")
     eventFrame:RegisterEvent("CHAT_MSG_SYSTEM")
     eventFrame:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-    eventFrame:RegisterEvent("UNIT_SPELLCAST_STOP")
     eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED")
     eventFrame:RegisterEvent("UNIT_SPELLCAST_FAILED_QUIET")
     eventFrame:RegisterEvent("UPDATE_BINDINGS")
+    eventFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
 
     SLASH_LOOTFILTER1 = "/FX"
     SLASH_LOOTFILTER2 = "/LootFilter"
@@ -155,9 +153,20 @@ function LF.init()
         LF.showMainWindow()
     end
 
-    LF.db.isAutoVendoring = true
-    LF.isAutoDisenchanting = false
-    LF.lastAtoDisenchantClickTime = 0
+    LF.merchantButton = CreateFrame("Button", "LFSellJunkButton", MerchantFrame, "OptionsButtonTemplate")
+    LF.merchantButton:SetSize(50, 22)
+    LF.merchantButton:SetText("Filter")
+
+    -- Position it relative to the merchant frame (adjust to fit your layout)
+    LF.merchantButton:SetPoint("TOPRIGHT", MerchantFrame, "TOPRIGHT", -60, -15)
+
+    -- Set button behavior
+    LF.merchantButton:SetScript("OnClick", function()
+        LF.PerformSellInventory()
+    end)
+
+
+
 
     GameTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
     ItemRefTooltip:HookScript("OnTooltipSetItem", AddToTooltip)
@@ -169,7 +178,12 @@ function LF.init()
     LF.buildReferenceTable()
 
     LF.QueryAllRulesInFilter()
-    LF.showDisenchantWindow()
+
+    LF.isAutoDisenchanting = false
+    LF.lastAtoDisenchantClickTime = 0
+    LF.createDisenchantWindow()
+    if LF.db.globals["autoVendor"] then LF.merchantButton:Hide() end
+    if LF.db.globals["alwaysShowDisenchant"] then LF.disenchantWindow:Show() end
 
     -- Hook into Buyback function
     hooksecurefunc("BuybackItem", function(index)
@@ -187,14 +201,21 @@ function LF.init()
         UseContainerItemTime = GetTime()
     end)
     LF.doneInit = true
+    print(LF.fancyName.. " loaded. Type /filterx to open.")
 end
 
 function LF:ADDON_LOADED(addonName)
     if addonName == name then
-        print("addon loaded")
-        LootFilterDB = LootFilterDB or {}
-        LF.db = LootFilterDB
+        FilterXDB = FilterXDB or {}
+        LF.db = FilterXDB
         LF.db.filters = LF.db.filters or {}
+        LF.db.globals = LF.db.globals or {}
+        for key, value in pairs(LF.defaults.globals) do
+            if  LF.db.globals[key] == nil then
+                LF.db.globals[key] = value
+            end
+        end
+
         eventFrame:UnregisterEvent("ADDON_LOADED")
 
         LF.QueryReferences()
@@ -501,7 +522,7 @@ end
 
 function LF:MERCHANT_SHOW()
     lastSoldItem = nil -- Reset on vendor open
-    if LF.db.   isAutoVendoring then
+    if LF.db.globals["autoVendor"] then
         LF.PerformSellInventory()
     end
 end
@@ -576,16 +597,10 @@ function LF:UNIT_SPELLCAST_START(unit)
     end
 end
 
-function LF:CURRENT_SPELL_CAST_CHANGED()
-end
-
-
 function LF:UNIT_SPELLCAST_INTERRUPTED()
     LF.lastAtoDisenchantClickTime = 0
 end
 
-function LF:UNIT_SPELLCAST_STOP()
-end
 
 function LF:UNIT_SPELLCAST_FAILED()
     LF.lastAtoDisenchantClickTime = 0
@@ -594,29 +609,24 @@ end
 function LF:UNIT_SPELLCAST_FAILED_QUIET()
     LF.lastAtoDisenchantClickTime = 0
 end
-
+function LF:PLAYER_REGEN_ENABLED()
+    LF.refreshDisenchantWindow()
+end
 function LF:UPDATE_BINDINGS()
     SetupKeyBinding()
 end
 
-
-local trackLootTypes = {
-    item = true,   -- "You receive item:"
-    loot = true,   -- "You receive loot:"
-    create = true, -- "You create:"
-}
-
 function LF:CHAT_MSG_LOOT(msg)
     local itemLink, count
-    if msg:find("You receive item:") and trackLootTypes.item then
+    if msg:find("You receive item:") and LF.db.globals["alertContainers"] then
         itemLink, count = msg:match("You receive item: (.+)x(%d+)%.")
         if not itemLink then itemLink = msg:match("You receive item: (.+)%.") end
 
-    elseif msg:find("You receive loot:") and trackLootTypes.loot then
+    elseif msg:find("You receive loot:") and LF.db.globals["alertLoot"] then
         itemLink, count = msg:match("You receive loot: (.+)x(%d+)%.")
         if not itemLink then itemLink = msg:match("You receive loot: (.+)%.") end
 
-    elseif msg:find("You create:") and trackLootTypes.create then
+    elseif msg:find("You create:") and LF.db.globals["alertCrafting"] then
         itemLink, count = msg:match("You create: (.+)x(%d+)%.")
         if not itemLink then itemLink = msg:match("You create: (.+)%.") end
     end

@@ -33,10 +33,14 @@ function LF.createFilterWindow()
         self:ClearFocus()
     end)
 
-    FilterWindow.autoAddItemCheckbox = CreateFrame("CheckButton", "autoAddItemCheckbox", FilterWindow, "UICheckButtonTemplate")
-    FilterWindow.autoAddItemCheckbox:SetPoint("TOPLEFT", FilterWindow, "TOP", 0, -50)
-    FilterWindow.autoAddItemCheckbox.text = _G[FilterWindow.autoAddItemCheckbox:GetName() .. "Text"]
-    FilterWindow.autoAddItemCheckbox.text:SetText("Auto add vendored items")
+    FilterWindow.autoAddItemCheckbox = CreateFrame("CheckButton", "autoAddItemVendorCheckbox", FilterWindow, "UICheckButtonTemplate")
+    FilterWindow.autoAddItemCheckbox:SetSize(32, 32)
+    FilterWindow.autoAddItemCheckbox:SetPoint("TOPRIGHT", FilterWindow, "TOPRIGHT", -10, -30)
+
+    FilterWindow.autoAddItemCheckbox.label = FilterWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    FilterWindow.autoAddItemCheckbox.label:SetPoint("RIGHT", FilterWindow.autoAddItemCheckbox, "LEFT", -3, 1)
+    FilterWindow.autoAddItemCheckbox.label:SetText("Auto add Vendored items")
+    FilterWindow.autoAddItemCheckbox.label:SetTextColor(unpack(LF.Colors.Text))
     FilterWindow.autoAddItemCheckbox:SetScript("OnClick", function(self)
         local checked = self:GetChecked()
         if checked then
@@ -48,9 +52,14 @@ function LF.createFilterWindow()
     end)
 
     FilterWindow.autoAddItemDisenchantCheckbox = CreateFrame("CheckButton", "autoAddItemDisenchantCheckbox", FilterWindow, "UICheckButtonTemplate")
-    FilterWindow.autoAddItemDisenchantCheckbox:SetPoint("TOPLEFT", FilterWindow, "TOP", 0, -30)
-    FilterWindow.autoAddItemDisenchantCheckbox.text = _G[FilterWindow.autoAddItemDisenchantCheckbox:GetName() .. "Text"]
-    FilterWindow.autoAddItemDisenchantCheckbox.text:SetText("Auto add Disenchanted items")
+    FilterWindow.autoAddItemDisenchantCheckbox:SetSize(32, 32)
+    FilterWindow.autoAddItemDisenchantCheckbox:SetPoint("TOPRIGHT", FilterWindow, "TOPRIGHT", -10, -60)
+
+    FilterWindow.autoAddItemDisenchantCheckbox.label = FilterWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    FilterWindow.autoAddItemDisenchantCheckbox.label:SetPoint("RIGHT", FilterWindow.autoAddItemDisenchantCheckbox, "LEFT", -3, 1)
+    FilterWindow.autoAddItemDisenchantCheckbox.label:SetText("Auto add Disenchanted items")
+    FilterWindow.autoAddItemDisenchantCheckbox.label:SetTextColor(unpack(LF.Colors.Text))
+
     FilterWindow.autoAddItemDisenchantCheckbox:SetScript("OnClick", function(self)
         local checked = self:GetChecked()
         if checked then
@@ -58,7 +67,6 @@ function LF.createFilterWindow()
         else
             LF.setAutoAddDisenchant(false)
         end
-        
     end)
 
     FilterWindow.autoAddItemCheckbox:SetScript("OnEnter", function(self)

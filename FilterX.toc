@@ -4,7 +4,7 @@
 ## Author: OpenTTD
 ## Version: 1.0.0
 
-## SavedVariables: LootFilterDB
+## SavedVariables: FilterXDB
 core.lua
 LibDeflate.lua
 constants.lua

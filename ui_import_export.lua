@@ -18,6 +18,7 @@ local function import()
         data.name = LF.createBestAvailableFilterName(data.name)
 
         table.insert(LF.db.filters, data)
+        LF.SetSelectedFilterByName(data.name)
         LF.hideExportWindow()
 end
 

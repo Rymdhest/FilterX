@@ -21,10 +21,12 @@ function LF.UpdateMacroText(first)
             disenchantWindow.button:SetAttribute("macrotext", "/run print('No more items to disenchant')")
             LF.updateNextDisenchantitem(nil)
         end
+        LF.refreshDisenchantWindow()
     end
 
 function LF.updateNextDisenchantitem(item)
 
+    LF.refreshDisenchantWindow()
     if disenchantWindow.count == 0 or not item then
         disenchantWindow.nextItemLabel:Hide()
         disenchantWindow.nextItemIcon:Hide()
@@ -95,6 +97,7 @@ function LF.    createDisenchantWindow()
 
     disenchantWindow.countLabel = disenchantWindow:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     disenchantWindow.countLabel:SetText("Count")
+    disenchantWindow.countLabel:SetTextColor(unpack(LF.Colors.Text))
     disenchantWindow.countLabel:SetPoint("TOP", disenchantWindow, "TOP", 0, -2)
 
     disenchantWindow.nextItemIcon = disenchantWindow:CreateTexture(nil, "ARTWORK")
@@ -144,7 +147,11 @@ function LF.    createDisenchantWindow()
 end
 
 
-
+function LF.refreshDisenchantWindow()
+    if LF.db.globals["alwaysShowDisenchant"] then LF.disenchantWindow:Show()
+    elseif LF.disenchantWindow.count > 0 then LF.disenchantWindow:Show()
+    else LF.disenchantWindow:Hide() end
+end
 
 function LF.showDisenchantWindow()
     if not disenchantWindow then

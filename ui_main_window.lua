@@ -34,7 +34,7 @@ function LF.InitializeDropdown(self, level)
 
 
 function LF.createMainWindow()
-    MainWindow = LF.createBaseWindow("mainWindow", "".. "|cffFFee33Filter|r|cffff0000X|r" .. " by " .. "|cffffff00OpenTTD|r")
+    MainWindow = LF.createBaseWindow("mainWindow", "".. LF.fancyName .. " by " .. "|cffffff00OpenTTD|r")
     LF.MainWindow = MainWindow
     MainWindow.closeButton:SetScript("OnClick", function(self)
         LF.hideMainWindow()
@@ -61,8 +61,6 @@ function LF.createMainWindow()
     newFilterButton:SetScript("OnClick", function()
         local newFilter = LF.CreateNewFilter()
         LF.SetSelectedFilterByName(newFilter.name)
-        UIDropDownMenu_Initialize(MainWindow.dropdown, LF.InitializeDropdown)
-        UIDropDownMenu_SetSelectedName(MainWindow.dropdown, newFilter.name)
         LF.showFilterWindow()
     end)
 
@@ -145,6 +143,64 @@ function LF.createMainWindow()
         StaticPopup_Show("DELETE_RULE_CONFIRM")
 
     end)
+
+    function CreateCheckbox(parent, x, y, labelText, dbTable, dbKey)
+        local checkbox = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
+        checkbox:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+        checkbox:SetSize(26, 26)
+        checkbox:SetChecked(dbTable[dbKey])
+
+        local label = checkbox:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        label:SetPoint("LEFT", checkbox, "RIGHT", 2, 0)
+        label:SetText(labelText)
+        label:SetTextColor(unpack(LF.Colors.Text)) -- Example text color
+
+        checkbox:SetScript("OnClick", function(self)
+            dbTable[dbKey] = self:GetChecked() and true or false
+        end)
+
+        return checkbox
+    end
+
+
+    
+    local settings = CreateFrame("Frame", "Global Settings", MainWindow)
+    settings:SetPoint("BOTTOM", MainWindow, "BOTTOM", 0, 20)
+    settings:SetSize(450, 200)
+
+    local settingsLabel = settings:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    settingsLabel:SetPoint("BOTTOM", settings, "TOP", 0, -5)
+    settingsLabel:SetText("Global Settings")
+    settingsLabel:SetTextColor(unpack(LF.Colors.Text))
+
+    local autoLootCheckbox = CreateCheckbox(settings, 10, -10, "Auto sell at vendor", LF.db.globals, "autoVendor")
+    autoLootCheckbox:SetScript("OnClick", function(self)
+        LF.db.globals["autoVendor"] = self:GetChecked() and true or false
+        if self:GetChecked() then LF.merchantButton:Hide() else LF.merchantButton:Show() end
+    end)
+    local alwaysShowDisenchantCheckbox = CreateCheckbox(settings, 10, -30, "Always show disenchant window", LF.db.globals, "alwaysShowDisenchant")
+        alwaysShowDisenchantCheckbox:SetScript("OnClick", function(self)
+        LF.db.globals["alwaysShowDisenchant"] = self:GetChecked() and true or false
+        if self:GetChecked() then LF.disenchantWindow:Show() else LF.refreshDisenchantWindow() end
+    end)
+
+    CreateCheckbox(settings, 300, -10, "Alert loot", LF.db.globals, "alertLoot")
+    CreateCheckbox(settings, 300, -30, "Alert recieve", LF.db.globals, "alertContainers")
+    CreateCheckbox(settings, 300, -50, "Alert created", LF.db.globals, "alertCrafting")
+    CreateCheckbox(settings, 300, -70, "Alert gold", LF.db.globals, "alertGoldVendoring")
+
+
+    local border = CreateFrame("Frame", nil, settings)
+    border:SetPoint("TOPLEFT", settings, -1, 1)
+    border:SetPoint("BOTTOMRIGHT", settings, 1, -1)
+    border:SetFrameLevel(settings:GetFrameLevel() - 1) -- place behind
+    border:SetBackdrop({
+        edgeFile = "Interface\\Buttons\\WHITE8x8", 
+        edgeSize = 1,
+    })
+    border:SetBackdropBorderColor(unpack(LF.Colors.Border))
+
+
 
     MainWindow:SetFrameLevel(10)
 end

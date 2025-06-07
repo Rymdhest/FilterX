@@ -265,6 +265,13 @@ function LF.describeRule(rule)
             table.insert(parts, text)
         end
 
+        -- Requirement
+        if rule.requires ~= "Any" then
+            local text = "Meet Requirement"
+            if rule.requires == "No" then text = "Don't Meet Requirement" end
+            table.insert(parts, text)
+        end
+
         if #parts < 2 then
             table.insert(parts, "EVERYTHING")
         end

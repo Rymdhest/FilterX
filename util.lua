@@ -86,6 +86,7 @@ function LF.GetItemInfoObject(itemID)
             internalClass = mapped.class
             internalSubClass = mapped.subclass
         else 
+            print("could not find item map of object of: "..itemID.." - "..itemClassLocalized.." - "..itemSubClassLocalized)
             return nil
         end
     end
@@ -167,7 +168,6 @@ end
 end
 
 function LF.QueryReferences()
-    print("start to query :)")
     local queryRate = 60                          -- Max queries per second
     LF.queryInterval = 1 / queryRate          -- Seconds between queries
     LF.queryTimer = 0   
@@ -182,7 +182,6 @@ function LF.QueryReferences()
     end
 
     if #LF.queryRetries == 0 then 
-        print("Nothing to query in references:)")
         LF.init()
     else
         LF.chacheWaitingFrame:Show()
@@ -191,7 +190,6 @@ end
 
 function LF.QueryAllRulesInFilter()
     if not LF.GetSelectedFilter() then return end
-    print("start to query items:)")
     local queryRate = 60                          -- Max queries per second
     LF.queryInterval = 1 / queryRate          -- Seconds between queries
     LF.queryTimer = 0   
@@ -204,7 +202,6 @@ function LF.QueryAllRulesInFilter()
     end
 
     if #LF.queryRetries == 0 then 
-        print("Nothing to query in items")
     end
 end
 
@@ -224,7 +221,6 @@ end
 
 local function doneQuery()
     LF.waitingForQuery = false
-    print("DONE QUERYING")
     if not LF.doneInit then
         LF.init()
         LF.chacheWaitingFrame:Hide()
@@ -235,7 +231,6 @@ end
 local frame = CreateFrame("Frame")
 frame:SetScript("OnUpdate", function(self, elapsed)
     if #LF.queryRetries == 0 then return end
-    print(#LF.queryRetries.." queries left")
     LF.queryTimer = LF.queryTimer + elapsed
 
     -- Number of queries we are allowed to do this frame
@@ -279,11 +274,18 @@ chacheWaitingFrame:SetPoint("CENTER") -- position on the screen
 chacheWaitingFrame:Hide()
 chacheWaitingFrame:SetBackdropColor(unpack(LF.Colors.Background)) 
 chacheWaitingFrame:SetBackdropBorderColor(unpack(LF.Colors.Border)) 
+chacheWaitingFrame:SetClampedToScreen(true)
+chacheWaitingFrame:EnableMouse(true)
+chacheWaitingFrame:SetMovable(true)
+chacheWaitingFrame:RegisterForDrag("LeftButton")
+chacheWaitingFrame:SetScript("OnDragStart", function(self) self:StartMoving() end)
+chacheWaitingFrame:SetScript("OnDragStop", function(self) self:StopMovingOrSizing() end)
 
 -- Add text to the frame
 local text = chacheWaitingFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 text:SetPoint("CENTER", chacheWaitingFrame, "CENTER", 0, 0)
-text:SetText("Waiting for cache.\nDid you just delete it?\nShould take less than 1 minute.")
+text:SetTextColor(unpack(LF.Colors.Text))
+text:SetText(LF.fancyName.." is waiting for cache.\nDid you just delete it?\nPlease wait a minute.")
 chacheWaitingFrame:SetFrameStrata("HIGH")
 
 LF.chacheWaitingFrame = chacheWaitingFrame

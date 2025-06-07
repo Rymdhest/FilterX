@@ -1,5 +1,7 @@
 LF = LF or {}
 
+LF.fancyName = "|cffFFee33Filter|r|cffff0000X|r"
+
 function LF.NormalizeColor(color)
     return {color[1] / 255, color[2] / 255, color[3] / 255, color[4] / 255}
 end
@@ -11,13 +13,27 @@ LF.Colors = {
     Overlay    = LF.NormalizeColor({65, 90, 119, 255}),
 }
 
+LF.defaults = {
+    globals = {
+        autoVendor = true,
+        alwaysShowDisenchant = false,
+
+        
+        alertGoldVendoring = true,
+        alertLoot = true,
+        alertContainers = true,
+        alertCrafting = true,
+    }
+}
+
 LF.actions = {
     ["Keep"]       = {priority = 1, icon = "Interface\\Icons\\INV_Misc_Bag_07", color = {0.10, 1.00, 0.10}},
     ["Delete"]     = {priority = 2, icon = "Interface\\Icons\\Ability_Creature_Cursed_02", color = {1.00, 0.10, 0.10}},
     ["Disenchant"] = {priority = 3, icon = "Interface\\Icons\\Spell_Holy_RemoveCurse", color = {0.00, 0.44, 0.87}},
     ["Sell"]       = {priority = 4, icon = "Interface\\Icons\\INV_Misc_Coin_02", color = {1.00, 1.00, 0.00}},
-    ["Nothing"]    = {priority = 5, icon = "Interface\\Icons\\INV_Misc_QuestionMark", color = {1.00, 1.00, 1.00}},
+    ["Nothing"]    = {priority = 5, icon = "Interface\\Icons\\Spell_Nature_Sleep", color = {1.00, 1.00, 1.00}},
 }
+LF.actionsKeys = { "Keep", "Delete", "Disenchant", "Sell", "Nothing" }
 
 LF.alerts = {
     ["Nothing"]= {toast = "", priority = 5},
@@ -26,18 +42,20 @@ LF.alerts = {
     ["Large"]  = {toast = "heroictoast", priority = 2},
     ["Huge"]   = {toast = "legendarytoast", priority = 1},
 }
+LF.alertKeys = { "Huge", "Large", "Medium", "Small", "Nothing" }
 
 LF.modes = {
-    Conditions  = "Conditions",
-    Items     =  "Exact items",
+    ["Conditions"]  = "Conditions",
+    ["Items"]   = "Exact Items",
 }
+LF.modesKeys = { "Items", "Conditions"}
 
 LF.basicOptions = {
-    ["Any"] = {ID = 1},
-    ["Yes"]       = {ID = 2},
-    ["No"]    = {ID = 3},
+    ["Any"]   = {ID = 1, color = {1.00, 1.00, 1.00}},
+    ["Yes"]   = {ID = 2, color = {0.10, 1.00, 0.10}},
+    ["No"]    = {ID = 3, color = {1.00, 0.10, 0.10}},
 }
-
+LF.basicOptionKeys = { "Any", "Yes", "No" }
 
 LF.ItemRarities = {
     [0] = { name = "Poor",      color = {0.62, 0.62, 0.62}},
@@ -110,6 +128,7 @@ LF.referenceItems = {
         ["Orange"]      = 23439,
         ["Meta"]      = 41398,
         ["Prismatic"]      = 49110,
+        ["Simple"]      = 3864,
     },
     ["Armor"] = {
         __class = 2986,

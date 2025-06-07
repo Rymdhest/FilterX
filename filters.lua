@@ -5,6 +5,8 @@ function LF.SetSelectedFilterByName(name)
         if filter.name == name then
             LF.db.selectedFilterName = name
             LF.QueryAllRulesInFilter()
+            UIDropDownMenu_Initialize(LF.MainWindow.dropdown, LF.InitializeDropdown)
+            UIDropDownMenu_SetSelectedName(LF.MainWindow.dropdown, name)
             return true
         end
     end
@@ -125,7 +127,7 @@ function LF.CopyFilter(originalFilter)
     if not originalFilter then return end
     local newFilter = DeepCopy(originalFilter)
     newFilter.name = LF.createBestAvailableFilterName(originalFilter.name.." (copy)")
-    table.insert(LootFilterDB.filters, newFilter)
+    table.insert(LF.db.filters, newFilter)
     LF.SetSelectedFilterByName(newFilter.name)
     return newFilter
 end

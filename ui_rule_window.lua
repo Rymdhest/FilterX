@@ -59,20 +59,15 @@ local function TryAddItemByInput(inputText, retryCount)
     end
 
     -- Assume it's a name
-    local foundID
-    for i = 1, 300000 do
-        local name = LF.GetItemInfo(i)
-        if name and name:lower() == inputText:lower() then
-            foundID = i
-            break
-        end
+    local _, link= LF.GetItemInfo(inputText)
+    if link then
+        print(link)
+        LF.AddItemIDToRule(rule, tonumber(link:match("item:(%d+)")))
+        return
     end
 
-    if foundID then
-        LF.AddItemIDToRule(rule, foundID)
-    else
-        print("|cffff0000[LF]|r Item not found or not cached. Try shift-clicking it or typing an item ID.")
-    end
+    print("|cffff0000[LF]|r Item not found or not cached. Try shift-clicking it or typing an item ID.")
+
 end
 
 
@@ -170,7 +165,8 @@ function LF.CreateDropdown(params)
     dropdown.selectedValue = dropdown.selectedValue or nil
 
     UIDropDownMenu_Initialize(dropdown, function(self, level)
-        for key, value in pairs(params.optionsTable) do
+        for _, key in ipairs(params.order) do
+            local value =params.optionsTable[key]
             local displayText = params.getText and params.getText(key, value) or value
             local info = UIDropDownMenu_CreateInfo()
             info.text = displayText
@@ -205,6 +201,7 @@ local function createModeSelect()
         labelY = -40,
         width = 80,
         optionsTable = LF.modes,
+        order = LF.modesKeys,
         getText = function(key, value) return value end,
         onSelect = function(rule, selectedKey)
             rule.mode = selectedKey
@@ -220,7 +217,11 @@ local function createRequiresSelect()
         labelY = -350,
         width = 50,
         optionsTable = LF.basicOptions,
-        getText = function(key) return key end,
+        order = LF.basicOptionKeys,
+        getText = function(key)
+            local color = LF.RGBToHex(unpack(LF.basicOptions[key].color))
+            return "|cff"..color..key.."|r" 
+        end,
         onSelect = function(rule, selectedKey)
             rule.requires = selectedKey
         end
@@ -234,7 +235,11 @@ local function createSoulboundSelect()
         labelY = -290,
         width = 50,
         optionsTable = LF.basicOptions,
-        getText = function(key) return key end,
+        order = LF.basicOptionKeys,
+        getText = function(key)
+            local color = LF.RGBToHex(unpack(LF.basicOptions[key].color))
+            return "|cff"..color..key.."|r" 
+        end,
         onSelect = function(rule, selectedKey)
             rule.soulbound = selectedKey
         end
@@ -248,6 +253,7 @@ local function createAlertSelect()
         labelY = -70,
         width = 100,
         optionsTable = LF.alerts,
+        order = LF.alertKeys,
         getText = function(key, val)
             if key == "Nothing" then
                 return key
@@ -268,7 +274,11 @@ local function createLearnedSelect()
         labelY = -320,
         width = 50,
         optionsTable = LF.basicOptions,
-        getText = function(key) return key end,
+        order = LF.basicOptionKeys,
+        getText = function(key)
+            local color = LF.RGBToHex(unpack(LF.basicOptions[key].color))
+            return "|cff"..color..key.."|r" 
+        end,
         onSelect = function(rule, selectedKey)
             rule.learned = selectedKey
         end
@@ -282,8 +292,10 @@ local function createActionSelect()
         labelY = -40,
         width = 100,
         optionsTable = LF.actions,
+        order = LF.actionsKeys,
         getText = function(key, val)
-            return  "|T" .. val.icon .. ":14:14:0:0|t "..key
+            local color = LF.RGBToHex(unpack(LF.actions[key].color))
+            return  "|T" .. val.icon .. ":14:14:0:0|t ".."|cff"..color..key.."|r" 
         end,
         onSelect = function(rule, selectedKey)
             rule.action = selectedKey
@@ -420,15 +432,25 @@ local function createItemList()
 
     return itemListFrame
 end
-local function createMinMaxInput(labelText, yOffset, minVarName, maxVarName, frameNamePrefix)
+local function createMinMaxInput(labelText, yOffset, minVarName, maxVarName, frameNamePrefix, decimal)
     local frame = CreateFrame("Frame", frameNamePrefix .. "SelectFrame", RuleWindow)
-    local function createInput(name)
+    local function createInput(name, decimal)
         local input = CreateFrame("EditBox", name, frame, "InputBoxTemplate")
         input:SetSize(35, 20)
         input:SetAutoFocus(false)
-        input:SetNumeric(true)
         input:SetMaxLetters(4)
         input:SetText("")
+        if decimal then
+            input:SetScript("OnTextChanged", function(self)
+                local text = self:GetText()
+                local filtered = text:gsub("[^0-9%.]", ""):gsub("(%..*)%.", "%1") -- allow only one dot
+                if text ~= filtered then
+                    self:SetText(filtered)
+                end
+            end)
+        else
+            input:SetNumeric(true)
+        end
         return input
     end
 
@@ -454,7 +476,7 @@ local function createMinMaxInput(labelText, yOffset, minVarName, maxVarName, fra
     minLabel:SetText("Min")
     minLabel:SetTextColor(unpack(LF.Colors.Text))
 
-    local minInput = createInput("min" .. frameNamePrefix .. "Input")
+    local minInput = createInput("min" .. frameNamePrefix .. "Input", decimal)
     minInput:SetPoint("LEFT", minLabel, "RIGHT", 10, 0)
 
     -- Max label and input
@@ -463,7 +485,7 @@ local function createMinMaxInput(labelText, yOffset, minVarName, maxVarName, fra
     maxLabel:SetText("Max")
     maxLabel:SetTextColor(unpack(LF.Colors.Text))
 
-    local maxInput = createInput("max" .. frameNamePrefix .. "Input")
+    local maxInput = createInput("max" .. frameNamePrefix .. "Input", decimal)
     maxInput:SetPoint("LEFT", maxLabel, "RIGHT", 10, 0)
 
     -- Scripts
@@ -527,7 +549,7 @@ function LF.createRuleWindow()
     RuleWindow.wordList = createWordList()
     RuleWindow.itemList = createItemList()
     RuleWindow.regexInput = createRegexEdit()
-    RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -100, "goldValueMin", "goldValueMax", "GoldValue")
+    RuleWindow.goldValue = createMinMaxInput("Value (Gold):", -100, "goldValueMin", "goldValueMax", "GoldValue", true)
     RuleWindow.itemLevel = createMinMaxInput("Item Level:", -120, "itemLevelMin", "itemLevelMax", "ItemLevel")
     RuleWindow.levelReq = createMinMaxInput("Level Req:", -140, "levelRequirementMin", "levelRequirementMax", "LevelReq")
     --RuleWindow.itemCount = createMinMaxInput("Item Count:", -160, "countMin", "countMax", "ItemCount")
@@ -562,11 +584,15 @@ function LF.showRuleWindow()
     if rule.regex then RuleWindow.regexInput:SetText(rule.regex) end
 
     RuleWindow.actionSelect.selectedValue = rule.action
-    UIDropDownMenu_SetText(RuleWindow.actionSelect, "|T" .. LF.actions[rule.action].icon ..":14:14:0:0|t "..rule.action)
+
+
+    
+    UIDropDownMenu_SetText(RuleWindow.actionSelect, "|T" .. LF.actions[rule.action].icon ..":14:14:0:0|t ".."|cff"..LF.RGBToHex(unpack(LF.actions[rule.action].color))..rule.action.."|r" )
     UIDropDownMenu_Refresh(RuleWindow.actionSelect)
 
+
     RuleWindow.learnedSelect.selectedValue = rule.learned
-    UIDropDownMenu_SetText(RuleWindow.learnedSelect, rule.learned)
+    UIDropDownMenu_SetText(RuleWindow.learnedSelect, "|cff"..LF.RGBToHex(unpack(LF.basicOptions[rule.learned].color))..rule.learned.."|r")
     UIDropDownMenu_Refresh(RuleWindow.learnedSelect)
 
     RuleWindow.alertSelect.selectedValue = rule.alert
@@ -578,11 +604,11 @@ function LF.showRuleWindow()
     UIDropDownMenu_Refresh(RuleWindow.alertSelect)
 
     RuleWindow.soulboundSelect.selectedValue = rule.soulbound
-    UIDropDownMenu_SetText(RuleWindow.soulboundSelect, rule.soulbound)
+    UIDropDownMenu_SetText(RuleWindow.soulboundSelect, "|cff"..LF.RGBToHex(unpack(LF.basicOptions[rule.soulbound].color))..rule.soulbound.."|r")
     UIDropDownMenu_Refresh(RuleWindow.soulboundSelect)
 
     RuleWindow.requiresSelect.selectedValue = rule.requires
-    UIDropDownMenu_SetText(RuleWindow.requiresSelect, rule.requires)
+    UIDropDownMenu_SetText(RuleWindow.requiresSelect, "|cff"..LF.RGBToHex(unpack(LF.basicOptions[rule.requires].color))..rule.requires.."|r")
     UIDropDownMenu_Refresh(RuleWindow.requiresSelect)
 
     RuleWindow.modeSelect.selectedValue = rule.mode
