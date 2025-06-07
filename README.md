@@ -1,108 +1,87 @@
-# FilterX: Advanced Loot Filtering Addon for WoW 3.3.5
+# FilterX
 
-FilterX is a powerful and customizable loot filter addon for World of Warcraft 3.3.5. It empowers players to automate and fine-tune their loot management by creating flexible filters with detailed rule sets and automated actions.
-
----
-
-## Table of Contents
-
-- [Download](#download)
-- [Features](#features)
-- [How It Works](#how-it-works)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Importing & Exporting Filters](#importing--exporting-filters)
-- [Contributing](#contributing)
-- [License](#license)
+<div align="center">
+  <img src="screenshots/filterx_main.png" alt="FilterX Main Interface" width="400px" />
+  <img src="screenshots/filterx_disEnchantUI.png" alt="FilterX Disenchant UI" width="400px" />
+</div>
 
 ---
 
-## Download
+## Release
 
-Get the latest stable release here:
+Download the latest version of FilterX here:  
+[FilterX v1.0.0 Download](https://github.com/rymdhest/FilterX/releases/latest)
 
-[Download FilterX v1.0.0](https://github.com/Rymdhest/FilterX/releases/download/v1.0.0/FilterX.zip)
+---
+
+FilterX is a World of Warcraft 3.3.5 loot filter addon that empowers players to create customizable filters to manage their loot automatically. With FilterX, you can define detailed rules to decide what happens to each item you loot, streamlining your gameplay and inventory management.
 
 ---
 
 ## Features
 
-- **Custom Filters:** Create unlimited filters, each with its own set of rules.
-- **Comprehensive Rule Types:**
-  - Item level range
-  - Item quality
-  - Item class/subclass
-  - Bind on pickup status
-  - Usability (usable by your character)
-  - Already learned status
-  - Name contains specific words
-  - Exact item matches
-- **Automated Actions:** Assign actions to rules:
-  - Do nothing
-  - Sell
-  - Disenchant
-  - Delete
-  - Keep  
-  (Actions are prioritized: Do nothing > Sell > Disenchant > Delete > Keep)
-- **Alerts:** Attach customizable alert popups to any rule that triggers.
-- **Smart Learning:** Items manually sold or disenchanted can be auto-added to the respective rules.
-- **Vendor Automation:** Instantly sell all items marked for selling when visiting a vendor.
-- **Disenchant UI:** Dedicated UI and button to disenchant all marked items in your inventory.
-- **Easy Sharing:** Import and export filters to share setups with other players.
+- **Custom Filters & Rules**  
+  Create multiple filters, each containing rules based on:  
+  - Item level range  
+  - Item quality  
+  - Item classes and subclasses  
+  - Bind on pickup status  
+  - Usability  
+  - Whether the item is already learned  
+  - Item name contains specific words  
+  - Exact item lists  
 
----
+- **Rule Actions**  
+  Each rule can perform one of the following actions on matching items, in priority order:  
+  1. Do nothing  
+  2. Sell  
+  3. Disenchant  
+  4. Delete  
+  5. Keep  
 
-## How It Works
+- **Alerts**  
+  Attach alerts to rules to receive popup notifications when an item triggers a rule.
 
-1. **Create Filters:** Organize your loot management by grouping rules into filters.
-2. **Define Rules:** Specify criteria for each rule using item properties or exact matches.
-3. **Assign Actions:** Decide what happens when an item matches a rule.
-4. **Automate:** Let FilterX handle selling, disenchanting, deleting, or keeping items based on your filters.
-5. **Get Alerts:** Receive popups for important loot drops, as configured in your rules.
-6. **Smart Additions:** When you manually sell or disenchant an item, FilterX can automatically update your rules for future automation.
+- **Automation**  
+  - Items manually sold or disenchanted by the player are automatically added to the corresponding sell or disenchant rules.  
+  - When visiting a vendor, all items marked for selling are automatically sold.  
+  - A dedicated disenchant UI with a button to disenchant all items marked for disenchant in your inventory.
+
+- **Tooltip Integration**  
+  When mousing over an item, the tooltip shows the action FilterX will perform and which rule triggered it.
+
+- **Slash Commands**  
+  Access the addon interface with any of these commands:  
+  `/filterx`, `/fx`, or `/lootfilter`
+
+- **Import/Export**  
+  Easily share filters by importing and exporting them between players.
 
 ---
 
 ## Installation
 
-1. Download the latest release of FilterX.
-2. Extract the contents to your `World of Warcraft/Interface/AddOns/FilterX` directory.
-3. Launch WoW and enable FilterX in the AddOns menu.
+1. Download the latest release ZIP file.  
+2. Extract the folder named `FilterX` into your World of Warcraft `Interface/AddOns` directory.  
+3. Restart WoW or reload the UI with `/reload`.
 
 ---
 
 ## Usage
 
-- **Access FilterX:** Use the in-game commands or interface to open the FilterX configuration.
-- **Creating Filters & Rules:**  
-  - Add a new filter and define its rules.
-  - Choose rule types and set criteria (e.g., item level, quality, etc.).
-  - Assign actions and optional alerts.
-- **Automatic Actions:**  
-  - Visit a vendor to auto-sell marked items.
-  - Use the Disenchant UI to disenchant all marked items with one click.
-- **Manual Learning:**  
-  - When you manually sell or disenchant, FilterX can prompt you to add the item to your rules for future automation.
-
----
-
-## Importing & Exporting Filters
-
-- **Export:** Share your filter setups with others using the export function.
-- **Import:** Load filters from other players to quickly adopt their loot management strategies.
+- Open the main FilterX window using `/filterx`, `/fx`, or `/lootfilter`.  
+- Create filters and add rules with desired conditions and actions.  
+- Use the vendor and disenchant automation features to manage your inventory effortlessly.  
+- Hover over items to see what FilterX will do with them.
 
 ---
 
 ## Contributing
 
-Contributions, bug reports, and feature requests are welcome! Please open an issue or submit a pull request.
+Contributions and feedback are welcome! Feel free to open issues or submit pull requests.
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-**Last updated:** June 7, 2025
+This project is licensed under the MIT License.
