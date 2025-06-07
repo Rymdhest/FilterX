@@ -1,8 +1,8 @@
 # FilterX
 
 <div align="center">
-  <img src="screenshots/FilterX rule window.png" alt="FilterX Rule Edit" width="400px" />
   <img src="screenshots/FilterX filter window.png" alt="FilterX Filter Edit" width="400px" />
+  <img src="screenshots/FilterX rule window.png" alt="FilterX Rule Edit" width="400px" />
 </div>
 
 ---
