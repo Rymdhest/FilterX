@@ -1,0 +1,38 @@
+FilterX - Loot Filter Addon for WoW 3.3.5
+
+=====================
+Version: 1.0.0
+=====================
+
+Description:
+-------------
+FilterX lets you create custom filters to automatically manage your loot. Define rules based on item level, quality, class, bind status, usability, and more.  
+Actions include: Keep, Sell, Disenchant, Delete, or Do Nothing.  
+Receive alerts for items matching your rules and see actions directly on item tooltips.
+
+Features:
+-------------
+- Create multiple filters with customizable rules
+- Rules match on item level, quality, class/subclass, bind status, usability, learned status, keywords, or exact item lists
+- Automate selling and disenchanting with vendor and disenchant UI integration
+- Tooltip shows the planned action and triggering rule
+- Import and export filters to share with others
+- Easy access with slash commands: /filterx, /fx, /lootfilter
+
+Installation:
+-------------
+1. Extract the 'FilterX' folder into your WoW Interface/AddOns directory  
+2. Start or reload WoW (/reload)  
+3. Use /filterx or /fx or /lootfilter to open the addon window  
+
+Contact:
+-------------
+For support or feedback, visit the GitHub page:  
+https://github.com/rymdhest/FilterX
+
+License:
+-------------
+MIT License
+
+Enjoy hassle-free loot management with FilterX!
+

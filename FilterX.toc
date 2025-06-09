@@ -7,6 +7,7 @@
 ## SavedVariables: FilterXDB
 core.lua
 LibDeflate.lua
+LibSerialize.lua
 constants.lua
 util.lua
 itemClassLookup.lua

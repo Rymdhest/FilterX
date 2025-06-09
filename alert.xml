@@ -23,7 +23,7 @@
 		</Animations>
 		<Layers>
 			<Layer level="BACKGROUND">
-				<Texture parentKey="Background" file="Interface\AddOns\pretty_lootalert\assets\loottoast" hidden="false">
+				<Texture parentKey="Background" file="Interface\AddOns\FilterX\assets\loottoast" hidden="false">
 					<Size x="276" y="96"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
@@ -33,35 +33,35 @@
 					<!-- quest rew 0.545898, 0.81543, 0.21875, 0.40625 -->
 					<TexCoords left="0.28222656" right="0.55175781" top="0.57812500" bottom="0.95312500"/>
 				</Texture>
-				<Texture parentKey="HeroicBackground" file="Interface\AddOns\pretty_lootalert\assets\LootToastAtlas" hidden="true">
+				<Texture parentKey="HeroicBackground" file="Interface\AddOns\FilterX\assets\LootToastAtlas" hidden="true">
 					<Size x="276" y="96"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
 					</Anchors>
 					<TexCoords left="0.000976562" right="0.270508" top="0.414062" bottom="0.601562"/>
 				</Texture>
-				<Texture parentKey="PvPBackground" file="Interface\AddOns\pretty_lootalert\assets\PvPRatedLootToast" hidden="true">
+				<Texture parentKey="PvPBackground" file="Interface\AddOns\FilterX\assets\PvPRatedLootToast" hidden="true">
 					<Size x="277" y="113"/>
 					<Anchors>
 						<Anchor point="CENTER" x="-1" y="2"/>
 					</Anchors>
 				</Texture>
 				<!--PerPlayerLoot-Gold-->
-				<Texture parentKey="MoneyBackground" file="Interface\AddOns\pretty_lootalert\assets\loottoast" hidden="true">
+				<Texture parentKey="MoneyBackground" file="Interface\AddOns\FilterX\assets\loottoast" hidden="true">
 					<Size x="249" y="71"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
 					</Anchors>
 					<TexCoords left="0.56347656" right="0.80664063" top="0.28906250" bottom="0.56640625"/>
 				</Texture>
-				<Texture parentKey="MountToastBackground" file="Interface\AddOns\pretty_lootalert\assets\mounttoast" hidden="true">
+				<Texture parentKey="MountToastBackground" file="Interface\AddOns\FilterX\assets\mounttoast" hidden="true">
 					<Size x="276" y="109"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
 					</Anchors>
 					<TexCoords left="0.001953" right="0.541016" top="0.007813" bottom="0.859375"/>
 				</Texture>
-				<Texture parentKey="PetToastBackground" file="Interface\AddOns\pretty_lootalert\assets\pettoast" hidden="true">
+				<Texture parentKey="PetToastBackground" file="Interface\AddOns\FilterX\assets\pettoast" hidden="true">
 					<Size x="276" y="98"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
@@ -70,14 +70,14 @@
 				</Texture>
 			</Layer>
 			<Layer level="ARTWORK">
-				<Texture parentKey="LegendaryBackground" file="Interface\AddOns\pretty_lootalert\assets\LegendaryToast" hidden="true">
+				<Texture parentKey="LegendaryBackground" file="Interface\AddOns\FilterX\assets\LegendaryToast" hidden="true">
 					<Size x="302" y="119"/>
 					<Anchors>
 						<Anchor point="CENTER" x="-12" y="-4"/>
 					</Anchors>
 					<TexCoords left="0.396484" right="0.986328" top="0.00195312" bottom="0.234375"/>
 				</Texture>
-				<Texture parentKey="LessBackground" file="Interface\AddOns\pretty_lootalert\assets\LootToastAtlas" hidden="true">
+				<Texture parentKey="LessBackground" file="Interface\AddOns\FilterX\assets\LootToastAtlas" hidden="true">
 					<Size x="276" y="80"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
@@ -86,14 +86,14 @@
 				</Texture>
 			</Layer>
 			<Layer level="BORDER">
-				<Texture name="$parentIcon" parentKey="Icon" file="Interface\AddOns\pretty_lootalert\assets\unknow_treasure">
+				<Texture name="$parentIcon" parentKey="Icon" file="Interface\AddOns\FilterX\assets\unknow_treasure">
 					<Size x="52" y="52"/>
 					<Anchors>
 						<Anchor point="LEFT" x="23" y="-2"/>
 					</Anchors>
 				</Texture>
 				<!-- Less Toast -->
-				<Texture name="$parentLessIcon" parentKey="LessIcon" file="Interface\AddOns\pretty_lootalert\assets\unknow_treasure">
+				<Texture name="$parentLessIcon" parentKey="LessIcon" file="Interface\AddOns\FilterX\assets\unknow_treasure">
 					<Size x="44" y="44"/>
 					<Anchors>
 						<Anchor point="LEFT" x="23" y="0"/>
@@ -122,7 +122,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="BORDER" textureSubLevel="-6">
-				<Texture parentKey="RecipeBackground" file="Interface\AddOns\pretty_lootalert\assets\recipetoast" hidden="true">
+				<Texture parentKey="RecipeBackground" file="Interface\AddOns\FilterX\assets\recipetoast" hidden="true">
 					<Size x="312" y="89"/>
 					<Anchors>
 						<Anchor point="CENTER"/>
@@ -132,7 +132,7 @@
 			</Layer>
 			<!--ItemBorder-Gold-->
 			<Layer level="ARTWORK" textureSubLevel="2">
-				<Texture name="$parentMoneyIconBorder" parentKey="MoneyIconBorder" file="Interface\AddOns\pretty_lootalert\assets\loottoast" hidden="true">
+				<Texture name="$parentMoneyIconBorder" parentKey="MoneyIconBorder" file="Interface\AddOns\FilterX\assets\loottoast" hidden="true">
 					<Size x="45" y="45"/>
 					<Anchors>
 						<Anchor point="CENTER" relativeTo="$parentMoneyIcon" relativePoint="CENTER" x="0" y="0"/>
@@ -146,7 +146,7 @@
 						<Anchor point="BOTTOMRIGHT" relativeTo="$parentIcon" x="-2" y="3"/>
 					</Anchors>
 				</FontString>
-				<Texture parentKey="IconBorder" atlas="loottoast-itemborder-green" file="Interface\AddOns\pretty_lootalert\assets\LootToastAtlas">
+				<Texture parentKey="IconBorder" atlas="loottoast-itemborder-green" file="Interface\AddOns\FilterX\assets\LootToastAtlas">
 					<Size x="58" y="58"/>
 					<Anchors>
 						<Anchor point="CENTER" relativeTo="$parentIcon" relativePoint="CENTER" x="0" y="0"/>
@@ -201,7 +201,7 @@
 						<Anchor point="BOTTOMRIGHT" x="-32" y="17"/>
 					</Anchors>
 				</FontString>
-				<Texture parentKey="legendaryGlow" alpha="0" alphaMode="ADD" atlas="LegendaryToast-background" file="Interface\AddOns\pretty_lootalert\assets\LegendaryToast">
+				<Texture parentKey="legendaryGlow" alpha="0" alphaMode="ADD" atlas="LegendaryToast-background" file="Interface\AddOns\FilterX\assets\LegendaryToast">
 					<Size x="302" y="119"/>
 					<Anchors>
 						<Anchor point="CENTER" x="-12" y="-4"/>
@@ -222,7 +222,7 @@
 					</Animations>
 					<TexCoords left="0.396484" right="0.986328" top="0.00195312" bottom="0.234375"/>
 				</Texture>
-				<Texture parentKey="legendaryShine" alpha="0" alphaMode="ADD" atlas="LegendaryToast-background" file="Interface\AddOns\pretty_lootalert\assets\LegendaryToast">
+				<Texture parentKey="legendaryShine" alpha="0" alphaMode="ADD" atlas="LegendaryToast-background" file="Interface\AddOns\FilterX\assets\LegendaryToast">
 					<Size x="302" y="119"/>
 					<Anchors>
 						<Anchor point="CENTER" x="-12" y="-4"/>
@@ -245,7 +245,7 @@
 				</Texture>
 			</Layer>
 			<Layer level="OVERLAY">
-				<Texture atlas="loottoast-glow" file="Interface\AddOns\pretty_lootalert\assets\LootToastAtlas" alphaMode="ADD" hidden="true" parentKey="glow">
+				<Texture atlas="loottoast-glow" file="Interface\AddOns\FilterX\assets\LootToastAtlas" alphaMode="ADD" hidden="true" parentKey="glow">
 					<Size x="286" y="109"/>
 					<Anchors>
 						<Anchor point="CENTER" x="0" y="0"/>
@@ -267,7 +267,7 @@
 						</AnimationGroup>
 					</Animations>
 				</Texture>
-				<Texture file="Interface\AddOns\pretty_lootalert\assets\LootToastAtlas" alphaMode="ADD" hidden="true" parentKey="shine">
+				<Texture file="Interface\AddOns\FilterX\assets\LootToastAtlas" alphaMode="ADD" hidden="true" parentKey="shine">
 					<Size x="171" y="75"/>
 					<Anchors>
 						<Anchor point="BOTTOMLEFT" x="-10" y="12"/>

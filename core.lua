@@ -18,7 +18,18 @@ local suceedDisenchantTime = 0
 
 local updateDisenchantOnLootClose = false
 
+C_Timer = {}
 
+function C_Timer.After(seconds, func)
+    local f = CreateFrame("Frame")
+    local start = GetTime()
+    f:SetScript("OnUpdate", function(self, elapsed)
+        if GetTime() - start >= seconds then
+            self:SetScript("OnUpdate", nil)
+            func()
+        end
+    end)
+end
 
 -- Called on addon load or initialization
 local function SetupKeyBinding()
@@ -466,7 +477,7 @@ function LF.PerformSellInventory(startBag, startSlot, startEarned, totalSoldStar
         if totalSoldCount == 1 then print ("Sold "..totalSoldCount.." item worth: "..amount)
         else print ("Sold "..totalSoldCount.." items worth: "..amount) end
 
-        LF.AddAlert(amount, false, LF.ItemRaritiesByName["Artifact"].id, false, false, "test", "moneytoast", false, false, false, earned)
+        if LF.db.globals["alertGoldVendoring"] then LF.AddAlert(amount, false, LF.ItemRaritiesByName["Artifact"].id, false, false, "test", "moneytoast", false, false, false, earned) end
     end
 end
 -- Function to track sold items based on locked items

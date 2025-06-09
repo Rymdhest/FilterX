@@ -47,7 +47,7 @@ local LOOT_BORDER_BY_QUALITY = {
 	[LE_ITEM_QUALITY_ARTIFACT] = {0.272461, 0.329102, 0.667969, 0.78125},
 };
 
-local assets = [[Interface\AddOns\pretty_lootalert\assets\]];
+local assets = [[Interface\AddOns\FilterX\assets\]];
 local SOUNDKIT = {
 	UI_EPICLOOT_TOAST = assets.."ui_epicloot_toast_01.ogg",
 	UI_GARRISON_FOLLOWER_LEARN_TRAIT = assets.."ui_garrison_follower_trait_learned_02.ogg",
