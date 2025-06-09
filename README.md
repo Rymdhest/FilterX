@@ -1,8 +1,8 @@
 # FilterX
 
 <div align="center">
-  <img src="screenshots/filterx_main.png" alt="FilterX Main Interface" width="400px" />
-  <img src="screenshots/filterx_disEnchantUI.png" alt="FilterX Disenchant UI" width="400px" />
+  <img src="screenshots/FilterX filter window.png" alt="FilterX Filter Edit" width="400px" />
+  <img src="screenshots/FilterX rule window.png" alt="FilterX Rule Edit" width="400px" />
 </div>
 
 ---
@@ -10,52 +10,61 @@
 ## Release
 
 Download the latest version of FilterX here:  
-[FilterX v1.0.0 Download](https://github.com/rymdhest/FilterX/releases/latest)
+[**Download FilterX v1.0.0 (Latest)**](https://github.com/rymdhest/FilterX/releases/latest)
 
 ---
 
-FilterX is a World of Warcraft 3.3.5 loot filter addon that empowers players to create customizable filters to manage their loot automatically. With FilterX, you can define detailed rules to decide what happens to each item you loot, streamlining your gameplay and inventory management.
+**FilterX** is a World of Warcraft 3.3.5 loot filter addon that allows players to create customizable filters to manage their loot automatically. With FilterX, you can define detailed rules to decide what happens to each item you loot, streamlining your gameplay and inventory management.
 
 ---
 
 ## Features
 
-- **Custom Filters & Rules**  
-  Create multiple filters, each containing rules based on:  
-  - Item level range  
-  - Item quality  
-  - Item classes and subclasses  
-  - Bind on pickup status  
-  - Usability  
-  - Whether the item is already learned  
-  - Item name contains specific words  
-  - Exact item lists  
+### Custom Filters & Rules
 
-- **Rule Actions**  
-  Each rule can perform one of the following actions on matching items, in priority order:  
-  1. Do nothing  
-  2. Sell  
-  3. Disenchant  
-  4. Delete  
-  5. Keep  
+Each rule can match items based on:
 
-- **Alerts**  
-  Attach alerts to rules to receive popup notifications when an item triggers a rule.
+- Item level range  
+- Item quality (e.g., Common, Rare, Epic)  
+- Item class or subclass (e.g., Weapon → Sword, Trade Goods → Enchanting)  
+- Bind on Pickup status  
+- Usability (usable by your character)  
+- Already learned (e.g., recipes or mounts)  
+- Name contains keyword  
+- Exact item list (by name or ID)
 
-- **Automation**  
-  - Items manually sold or disenchanted by the player are automatically added to the corresponding sell or disenchant rules.  
-  - When visiting a vendor, all items marked for selling are automatically sold.  
-  - A dedicated disenchant UI with a button to disenchant all items marked for disenchant in your inventory.
+### Rule Actions
 
-- **Tooltip Integration**  
-  When mousing over an item, the tooltip shows the action FilterX will perform and which rule triggered it.
+Each rule can perform one of the following actions on matching items, in priority order:
 
-- **Slash Commands**  
-  Access the addon interface with any of these commands:  
+1. Keep  
+2. Delete  
+3. Disenchant  
+4. Sell  
+5. Do nothing
+
+### Alerts
+
+- Attach alerts to rules to receive popup notifications when an item triggers a rule.
+
+### Automation
+
+- Items manually sold or disenchanted by the player can automatically be added to the corresponding sell or disenchant rules.  
+- When visiting a vendor, all items marked for selling are automatically sold.  
+- A dedicated disenchant UI provides a button to disenchant only items marked for disenchant in your inventory.
+
+### Tooltip Integration
+
+- When mousing over an item, the tooltip shows the action FilterX will perform and which rule triggered it.
+
+### Slash Commands
+
+- Access the addon interface with any of these commands:  
   `/filterx`, `/fx`, or `/lootfilter`
 
-- **Import/Export**  
-  Easily share filters by importing and exporting them between players.
+### Import/Export
+
+- Easily share filters by importing and exporting them between players.
 
 ---
 
@@ -78,7 +87,7 @@ FilterX is a World of Warcraft 3.3.5 loot filter addon that empowers players to 
 
 ## Contributing
 
-Contributions and feedback are welcome! Feel free to open issues or submit pull requests.
+Contributions and feedback are welcome. Feel free to open issues or submit pull requests.
 
 ---
 
